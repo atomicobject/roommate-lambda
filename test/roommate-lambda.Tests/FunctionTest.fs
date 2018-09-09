@@ -4,7 +4,7 @@ namespace roommate_lambda.Tests
 open Xunit
 open Amazon.Lambda.TestUtilities
 
-open roommate_lambda
+open RoommateLambda
 
 
 module FunctionTest =

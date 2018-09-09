@@ -14,5 +14,5 @@
   "function-runtime" : "dotnetcore2.1",
   "function-memory-size" : 256,
   "function-timeout"     : 30,
-  "function-handler"     : "roommate-lambda::roommate_lambda.Function::FunctionHandler"
+  "function-handler"     : "roommate-lambda::RoommateLambda.Function::FunctionHandler"
 }

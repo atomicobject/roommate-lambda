@@ -1,4 +1,4 @@
-namespace FSharpBasicFunction
+namespace RoommateLambda
 open Amazon.Lambda.Core
 open System
 open System.Threading
