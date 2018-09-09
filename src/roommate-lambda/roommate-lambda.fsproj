@@ -29,5 +29,10 @@
     <None Include="Readme.md" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="credentials.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
 </Project>
