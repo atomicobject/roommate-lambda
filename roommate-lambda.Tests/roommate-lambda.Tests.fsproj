@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\roommate-lambda\roommate-lambda.fsproj" />
+    <ProjectReference Include="..\roommate-lambda\roommate-lambda.fsproj" />
   </ItemGroup>
 
 </Project>
