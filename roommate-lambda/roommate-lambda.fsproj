@@ -22,9 +22,6 @@
   <ItemGroup>
     <None Include="Readme.md" />
     <Content Include="aws-lambda-tools-defaults.json" />
-    <Content Include="credentials.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
     
 </Project>
