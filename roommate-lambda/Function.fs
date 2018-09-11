@@ -10,7 +10,11 @@ open System
 type Function() =
     member __.FunctionHandler (input: string) (_: ILambdaContext) =
 
-        let events = CalendarFetcher.fetchEvents() |> Async.RunSynchronously
+        let secrets = SecretReader.readSecrets()
+        
+        let calendarId = "atomicobject.com_3935353434383037353937@resource.calendar.google.com"
+        
+        let events = CalendarFetcher.fetchEvents secrets.googleClientId secrets.googleClientSecret calendarId |> Async.RunSynchronously
         
         CalendarFetcher.printEvents events
         

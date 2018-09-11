@@ -13,15 +13,14 @@ module CalendarFetcher =
     open Google.Apis.Util.Store;
     open Google.Apis.Services
 
-    let fetchEvents () =
+    let fetchEvents clientId clientSecret calendarId =
 
         let scopes = [CalendarService.Scope.CalendarReadonly]
-        let stream = new FileStream("credentials.json", FileMode.Open, FileAccess.Read)
         let tempFile = new FileDataStore("google-filedatastore", true)
         async {
-            let! credential = GoogleWebAuthorizationBroker.AuthorizeAsync(GoogleClientSecrets.Load(stream).Secrets,
+            let! credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
+                                ClientSecrets( ClientId = clientId, ClientSecret = clientSecret),
                                 scopes, "user", CancellationToken.None, tempFile) |> Async.AwaitTask
-
             // Create the service
             let bar = new BaseClientService.Initializer(
                         ApplicationName = "roommate-test",
@@ -29,8 +28,7 @@ module CalendarFetcher =
             let service = new CalendarService(bar)
 
              // Define parameters of request.
-            let kleinCalendarId = "atomicobject.com_3935353434383037353937@resource.calendar.google.com"
-            let request = service.Events.List(kleinCalendarId)
+            let request = service.Events.List(calendarId)
             request.TimeMin <-System.Nullable DateTime.Now
             request.ShowDeleted <- System.Nullable false
             request.SingleEvents <- System.Nullable true

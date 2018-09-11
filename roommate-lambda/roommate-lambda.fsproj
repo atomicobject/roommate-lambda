@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Compile Include="CalendarFetcher.fs" />
+    <Compile Include="SecretReader.fs" />
     <Compile Include="Function.fs" />
   </ItemGroup>
 
@@ -25,5 +26,5 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-
+    
 </Project>
