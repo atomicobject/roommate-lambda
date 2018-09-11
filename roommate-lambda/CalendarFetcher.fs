@@ -51,6 +51,6 @@ module CalendarFetcher =
         
         events.Items |> Seq.iter (fun e -> 
             let start = e.Start.DateTime.ToString()
-            Console.WriteLine("{0} ({1})", e.Summary, start)
+            printfn "%s (%s)" e.Summary start
         )
         
