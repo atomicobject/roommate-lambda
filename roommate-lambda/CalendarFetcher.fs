@@ -18,26 +18,28 @@ module CalendarFetcher =
         let scopes = [CalendarService.Scope.CalendarReadonly]
         let stream = new FileStream("credentials.json", FileMode.Open, FileAccess.Read)
         let tempFile = new FileDataStore("google-filedatastore", true)
-        let credential = GoogleWebAuthorizationBroker.AuthorizeAsync(GoogleClientSecrets.Load(stream).Secrets, scopes, "user", CancellationToken.None, tempFile).Result
+        async {
+            let! credential = GoogleWebAuthorizationBroker.AuthorizeAsync(GoogleClientSecrets.Load(stream).Secrets,
+                                scopes, "user", CancellationToken.None, tempFile) |> Async.AwaitTask
 
-        // Create the service
-        let bar = new BaseClientService.Initializer()
-        bar.ApplicationName <- "lkjsdf"
-        bar.HttpClientInitializer <- credential
-        let service = new CalendarService(bar)
+            // Create the service
+            let bar = new BaseClientService.Initializer(
+                        ApplicationName = "roommate-test",
+                        HttpClientInitializer = credential )
+            let service = new CalendarService(bar)
 
-         // Define parameters of request.
-        let klienCalendarId = "atomicobject.com_3935353434383037353937@resource.calendar.google.com"
-        let request = service.Events.List(klienCalendarId)
-        request.TimeMin <-System.Nullable DateTime.Now
-        request.ShowDeleted <- System.Nullable false
-        request.SingleEvents <- System.Nullable true
-        request.MaxResults <- System.Nullable 10
-        request.OrderBy <- System.Nullable EventsResource.ListRequest.OrderByEnum.StartTime
+             // Define parameters of request.
+            let kleinCalendarId = "atomicobject.com_3935353434383037353937@resource.calendar.google.com"
+            let request = service.Events.List(kleinCalendarId)
+            request.TimeMin <-System.Nullable DateTime.Now
+            request.ShowDeleted <- System.Nullable false
+            request.SingleEvents <- System.Nullable true
+            request.MaxResults <- System.Nullable 10
+            request.OrderBy <- System.Nullable EventsResource.ListRequest.OrderByEnum.StartTime
 
-        // Execute the request
-        let events = request.Execute()
-        events
+            // Execute the request
+            return! request.ExecuteAsync() |> Async.AwaitTask
+        }
         
     let printEvents (events:Events) =
         printfn "summary %s" events.Summary

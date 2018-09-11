@@ -10,7 +10,7 @@ open System
 type Function() =
     member __.FunctionHandler (input: string) (_: ILambdaContext) =
 
-        let events = CalendarFetcher.fetchEvents()
+        let events = CalendarFetcher.fetchEvents() |> Async.RunSynchronously
         
         CalendarFetcher.printEvents events
         
