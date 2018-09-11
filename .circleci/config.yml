@@ -6,3 +6,5 @@ jobs:
     steps:
       - checkout
       - run: dotnet build
+      - run: dotnet test roommate-lambda.Tests/roommate-lambda.Tests.fsproj --filter Category!=API
+

@@ -14,7 +14,7 @@
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Core" Version="1.0.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.3.0" />
-    <PackageReference Include="Google.Apis.Calendar.v3" Version="1.35.1.1340" />
+    <PackageReference Include="Google.Apis.Calendar.v3" Version="1.35.1.1344" />
     <DotNetCliToolReference Include="Amazon.Lambda.Tools" Version="2.2.0" />
   </ItemGroup>
 

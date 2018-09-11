@@ -19,5 +19,6 @@ module FunctionTest =
 
         Assert.Equal("HELLO WORLD", upperCase)
 
-    [<EntryPoint>]
-    let main _ = 0
+    [<Fact>]
+    let ``Temp test``() =
+        Assert.Equal(5,5)
