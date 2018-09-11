@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26124.0
+MinimumVisualStudioVersion = 15.0.26124.0
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "roommate-lambda.Tests", "roommate-lambda.Tests\roommate-lambda.Tests.fsproj", "{F7680D08-645E-47A2-916B-CBB497F18597}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "roommate-lambda", "roommate-lambda\roommate-lambda.fsproj", "{C40E3143-56FA-4892-8730-E325B4C291B0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F7680D08-645E-47A2-916B-CBB497F18597}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7680D08-645E-47A2-916B-CBB497F18597}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7680D08-645E-47A2-916B-CBB497F18597}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F7680D08-645E-47A2-916B-CBB497F18597}.Debug|x64.Build.0 = Debug|Any CPU
+		{F7680D08-645E-47A2-916B-CBB497F18597}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F7680D08-645E-47A2-916B-CBB497F18597}.Debug|x86.Build.0 = Debug|Any CPU
+		{F7680D08-645E-47A2-916B-CBB497F18597}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7680D08-645E-47A2-916B-CBB497F18597}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7680D08-645E-47A2-916B-CBB497F18597}.Release|x64.ActiveCfg = Release|Any CPU
+		{F7680D08-645E-47A2-916B-CBB497F18597}.Release|x64.Build.0 = Release|Any CPU
+		{F7680D08-645E-47A2-916B-CBB497F18597}.Release|x86.ActiveCfg = Release|Any CPU
+		{F7680D08-645E-47A2-916B-CBB497F18597}.Release|x86.Build.0 = Release|Any CPU
+		{C40E3143-56FA-4892-8730-E325B4C291B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C40E3143-56FA-4892-8730-E325B4C291B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C40E3143-56FA-4892-8730-E325B4C291B0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C40E3143-56FA-4892-8730-E325B4C291B0}.Debug|x64.Build.0 = Debug|Any CPU
+		{C40E3143-56FA-4892-8730-E325B4C291B0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C40E3143-56FA-4892-8730-E325B4C291B0}.Debug|x86.Build.0 = Debug|Any CPU
+		{C40E3143-56FA-4892-8730-E325B4C291B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C40E3143-56FA-4892-8730-E325B4C291B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C40E3143-56FA-4892-8730-E325B4C291B0}.Release|x64.ActiveCfg = Release|Any CPU
+		{C40E3143-56FA-4892-8730-E325B4C291B0}.Release|x64.Build.0 = Release|Any CPU
+		{C40E3143-56FA-4892-8730-E325B4C291B0}.Release|x86.ActiveCfg = Release|Any CPU
+		{C40E3143-56FA-4892-8730-E325B4C291B0}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
