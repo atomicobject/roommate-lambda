@@ -1,0 +1,10 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: microsoft/dotnet:2.1-sdk
+    steps:
+      - checkout
+      - run: dotnet build
+      - run: dotnet test roommate-lambda.Tests/roommate-lambda.Tests.fsproj --filter Category!=API
+
