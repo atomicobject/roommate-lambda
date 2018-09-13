@@ -27,7 +27,7 @@ export googleClientSecret=jkljkljkl
 
 ## Build and Run
 - `dotnet build` to build the solution
-= `dotnet test` from the `roommate-lambda.Tests` directory to run tests.
+- `dotnet test` from the `roommate-lambda.Tests` directory to run tests.
 
 ## Steps taken to create initial project
 
