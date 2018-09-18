@@ -20,5 +20,9 @@
     <None Include="Readme.md" />
     <Content Include="aws-lambda-tools-defaults.json" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\roommate\roommate.fsproj" />
+  </ItemGroup>
     
 </Project>
