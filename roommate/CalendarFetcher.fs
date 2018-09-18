@@ -1,4 +1,4 @@
-namespace RoommateLambda
+namespace Roommate
 
 module CalendarFetcher =
 
