@@ -24,7 +24,7 @@ jobs:
           apt install -y zip
       - run:
           name: deploy
-          command:  dotnet lambda deploy-function --disable-interactive true -pl roommate-lambda --function-name roommate --profile $ROOMMATE_LAMBDA_PROFILE --function-role $ROOMMATE_LAMBDA_ROLE
+          command:  dotnet lambda deploy-function --disable-interactive true -pl roommate-lambda --function-name roommate --function-role $ROOMMATE_LAMBDA_ROLE
 
 workflows:
   version: 2
