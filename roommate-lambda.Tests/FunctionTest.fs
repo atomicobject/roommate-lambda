@@ -9,7 +9,7 @@ module FunctionTest =
     (*
     skip these with e.g. dotnet test --filter Category!=API
     *)
-    [<Trait("Category", "API")>]
+    // [<Trait("Category", "API")>]
     [<Fact>]
     let ``Invoke ToUpper Lambda Function``() =
         // Invoke the lambda function and confirm the string was upper cased.

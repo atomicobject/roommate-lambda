@@ -8,3 +8,32 @@ jobs:
       - run: dotnet build
       - run: dotnet test roommate-lambda.Tests/roommate-lambda.Tests.fsproj --filter Category!=API
 
+  deploy:
+    docker:
+      - image: microsoft/dotnet:2.1-sdk
+    steps:
+      - checkout
+      - run:
+          name: add ~/.dotnet/tools to $PATH
+          command: |
+            echo 'export PATH=$PATH:/root/.dotnet/tools'  >> $BASH_ENV
+            source $BASH_ENV
+      - run: dotnet tool install -g Amazon.Lambda.Tools
+      - run: |
+          apt update
+          apt install -y zip
+      - run:
+          name: deploy
+          command:  dotnet lambda deploy-function --disable-interactive true -pl roommate-lambda --function-name roommate --function-role $ROOMMATE_LAMBDA_ROLE
+
+workflows:
+  version: 2
+  build_test_deploy:
+    jobs:
+      - build
+      - deploy:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master

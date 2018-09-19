@@ -8,15 +8,9 @@ open System
 ()
 
 type Function() =
-    member __.FunctionHandler (input: string) (_: ILambdaContext) =
+    member __.FunctionHandler (input: string) (lambdaContext: ILambdaContext) =
 
-        let secrets = SecretReader.readSecrets()
-        
-        let calendarId = "atomicobject.com_3935353434383037353937@resource.calendar.google.com"
-        
-        let events = CalendarFetcher.fetchEvents secrets.googleClientId secrets.googleClientSecret calendarId |> Async.RunSynchronously
-        
-        CalendarFetcher.printEvents events
+        lambdaContext.Logger.Log "Hello from Lambda"
         
         // Default code from template... Delete this once we have an actual response
         match input with

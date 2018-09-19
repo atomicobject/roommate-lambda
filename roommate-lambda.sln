@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
@@ -6,6 +6,10 @@ MinimumVisualStudioVersion = 15.0.26124.0
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "roommate-lambda.Tests", "roommate-lambda.Tests\roommate-lambda.Tests.fsproj", "{F7680D08-645E-47A2-916B-CBB497F18597}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "roommate-lambda", "roommate-lambda\roommate-lambda.fsproj", "{C40E3143-56FA-4892-8730-E325B4C291B0}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "roommate-tool", "roommate-tool\roommate-tool.fsproj", "{C2403B74-9DCC-4ADB-833B-4664B2E711BF}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "roommate", "roommate\roommate.fsproj", "{476B1B33-CEA8-422A-A7C0-570D48E95B66}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,5 +48,29 @@ Global
 		{C40E3143-56FA-4892-8730-E325B4C291B0}.Release|x64.Build.0 = Release|Any CPU
 		{C40E3143-56FA-4892-8730-E325B4C291B0}.Release|x86.ActiveCfg = Release|Any CPU
 		{C40E3143-56FA-4892-8730-E325B4C291B0}.Release|x86.Build.0 = Release|Any CPU
+		{C2403B74-9DCC-4ADB-833B-4664B2E711BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2403B74-9DCC-4ADB-833B-4664B2E711BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2403B74-9DCC-4ADB-833B-4664B2E711BF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C2403B74-9DCC-4ADB-833B-4664B2E711BF}.Debug|x64.Build.0 = Debug|Any CPU
+		{C2403B74-9DCC-4ADB-833B-4664B2E711BF}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C2403B74-9DCC-4ADB-833B-4664B2E711BF}.Debug|x86.Build.0 = Debug|Any CPU
+		{C2403B74-9DCC-4ADB-833B-4664B2E711BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2403B74-9DCC-4ADB-833B-4664B2E711BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C2403B74-9DCC-4ADB-833B-4664B2E711BF}.Release|x64.ActiveCfg = Release|Any CPU
+		{C2403B74-9DCC-4ADB-833B-4664B2E711BF}.Release|x64.Build.0 = Release|Any CPU
+		{C2403B74-9DCC-4ADB-833B-4664B2E711BF}.Release|x86.ActiveCfg = Release|Any CPU
+		{C2403B74-9DCC-4ADB-833B-4664B2E711BF}.Release|x86.Build.0 = Release|Any CPU
+		{476B1B33-CEA8-422A-A7C0-570D48E95B66}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{476B1B33-CEA8-422A-A7C0-570D48E95B66}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{476B1B33-CEA8-422A-A7C0-570D48E95B66}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{476B1B33-CEA8-422A-A7C0-570D48E95B66}.Debug|x64.Build.0 = Debug|Any CPU
+		{476B1B33-CEA8-422A-A7C0-570D48E95B66}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{476B1B33-CEA8-422A-A7C0-570D48E95B66}.Debug|x86.Build.0 = Debug|Any CPU
+		{476B1B33-CEA8-422A-A7C0-570D48E95B66}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{476B1B33-CEA8-422A-A7C0-570D48E95B66}.Release|Any CPU.Build.0 = Release|Any CPU
+		{476B1B33-CEA8-422A-A7C0-570D48E95B66}.Release|x64.ActiveCfg = Release|Any CPU
+		{476B1B33-CEA8-422A-A7C0-570D48E95B66}.Release|x64.Build.0 = Release|Any CPU
+		{476B1B33-CEA8-422A-A7C0-570D48E95B66}.Release|x86.ActiveCfg = Release|Any CPU
+		{476B1B33-CEA8-422A-A7C0-570D48E95B66}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
