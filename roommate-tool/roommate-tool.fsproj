@@ -14,4 +14,8 @@
     <ProjectReference Include="..\roommate\roommate.fsproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="argu" Version="5.1.0" />
+  </ItemGroup>
+
 </Project>
