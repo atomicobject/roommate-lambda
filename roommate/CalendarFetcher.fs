@@ -13,6 +13,34 @@ module CalendarFetcher =
     open Google.Apis.Util.Store;
     open Google.Apis.Services
 
+    let printCalendars clientId clientSecret =
+        let scopes = [CalendarService.Scope.CalendarReadonly]
+        let tempFile = new FileDataStore("google-filedatastore", true)
+        
+        async {
+            let! credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
+                                ClientSecrets( ClientId = clientId, ClientSecret = clientSecret),
+                                scopes, "user", CancellationToken.None, tempFile) |> Async.AwaitTask
+            // Create the service
+            let bar = new BaseClientService.Initializer(
+                        ApplicationName = "roommate-test",
+                        HttpClientInitializer = credential )
+            let service = new CalendarService(bar)
+
+            let request = service.CalendarList.List()
+
+            // Execute the request
+            let! result =request.ExecuteAsync() |> Async.AwaitTask
+            let aogr_rooms = result.Items 
+                                |> Seq.filter (fun cal -> cal.Summary.Contains("AOGR"))
+                                |> Seq.filter (fun cal -> cal.Summary.Contains("Social") |> not)
+                                
+            aogr_rooms |> Seq.iter (fun item -> printfn "%s,\t%s" item.Id item.Summary)
+            printfn ""
+            printfn "export CALENDAR_IDS=%s" (aogr_rooms |> Seq.map (fun i -> i.Id) |> Seq.reduce (sprintf "%s,%s"))
+        }
+        
+        
     let fetchEvents clientId clientSecret calendarId =
 
         let scopes = [CalendarService.Scope.CalendarReadonly]
@@ -40,15 +68,19 @@ module CalendarFetcher =
         }
         
     let printEvents (events:Events) =
-        printfn "summary %s" events.Summary
-        printfn "description %s" events.Description
+        printfn "\n==== %s %s ====" events.Summary events.Description
         
-        match events.Items.Count with
-        | 0 -> printfn "No upcoming events found."
-        | n -> printfn "Got %d events:" n
+        if events.Items.Count = 0 then
+            printfn "No upcoming events found."
         
-        events.Items |> Seq.iter (fun e -> 
-            let start = e.Start.DateTime.ToString()
-            printfn "%s (%s)" e.Summary start
-        )
+        let hoursMinutes (d:DateTime) = sprintf "%2d:%02d" d.TimeOfDay.Hours d.TimeOfDay.Minutes
+            
+        let someOrBust = function
+                | None -> failwith "oops"
+                | Some opt -> opt
         
+        events.Items 
+            |> Seq.map (fun e -> e.Start.DateTime |> Option.ofNullable,e.End.DateTime |> Option.ofNullable,e.Summary)
+            |> Seq.filter (fun (a,b,_) -> a.IsSome && b.IsSome)
+            |> Seq.map (fun (a,b,c) -> a |> someOrBust |> hoursMinutes, b |> someOrBust |> hoursMinutes, c)
+            |> Seq.iter (fun (a,b,c) -> printfn "  %s-%s  %s" a b c)
