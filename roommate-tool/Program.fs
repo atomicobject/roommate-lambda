@@ -3,6 +3,7 @@
 open System
 open Roommate
 open Argu
+open Google.Apis.Http
  
 type CLIArguments =
     | Print_Ids
@@ -54,6 +55,8 @@ let main argv =
             let a = 5
             let calendar,endpoint = results.GetResult Subscribe_Webhook
             printfn "todo: subscribe webhook %s %s" calendar endpoint
+            
+            let result = CalendarFetcher.activateWebhook secrets.googleClientId secrets.googleClientSecret calendar endpoint |> Async.RunSynchronously
             
             ()
 

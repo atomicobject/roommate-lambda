@@ -6,6 +6,7 @@ module CalendarFetcher =
     open System.IO
     open System.Threading
     
+    open System
     open Google.Apis.Auth.OAuth2;
     open Google.Apis.Calendar.v3;
     open Google.Apis.Calendar.v3.Data;
@@ -84,3 +85,31 @@ module CalendarFetcher =
             |> Seq.filter (fun (a,b,_) -> a.IsSome && b.IsSome)
             |> Seq.map (fun (a,b,c) -> a |> someOrBust |> hoursMinutes, b |> someOrBust |> hoursMinutes, c)
             |> Seq.iter (fun (a,b,c) -> printfn "  %s-%s  %s" a b c)
+            
+    let activateWebhook clientId clientSecret calendarId url =
+        let scopes = [CalendarService.Scope.CalendarReadonly]
+//        CalendarService.Scope.CalendarEvents
+        let tempFile = new FileDataStore("google-filedatastore", true)
+        
+        async {
+            let! credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
+                                ClientSecrets( ClientId = clientId, ClientSecret = clientSecret),
+                                scopes, "user", CancellationToken.None, tempFile) |> Async.AwaitTask
+            // Create the service
+            let bar = new BaseClientService.Initializer(
+                        ApplicationName = "roommate-test",
+                        HttpClientInitializer = credential )
+            let service = new CalendarService(bar)
+
+            let guid = Guid.NewGuid().ToString()
+            // https://developers.google.com/calendar/v3/push#making-watch-requests
+            let channel = new Channel(Address = url, Type = "web_hook",Id = guid)
+            
+            let request = service.Events.Watch(channel,calendarId)
+
+            // Execute the request
+            let! result =request.ExecuteAsync() |> Async.AwaitTask
+            printfn "watch result: %s" (result.ToString())
+        }
+        
+        
