@@ -1,19 +1,30 @@
 namespace RoommateLambda
+
+
 open Amazon.Lambda.Core
-open System
+open Amazon.Lambda.APIGatewayEvents
+
+open System.Net
 
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [<assembly: LambdaSerializer(typeof<Amazon.Lambda.Serialization.Json.JsonSerializer>)>]
 ()
 
-type Function() =
-    member __.FunctionHandler (input: string) (lambdaContext: ILambdaContext) =
 
-        lambdaContext.Logger.Log "Hello from Lambda"
-        
-        // Default code from template... Delete this once we have an actual response
-        match input with
-        | null -> String.Empty
-        | _ -> input.ToUpper()
-        
+type Functions() =
+    /// <summary>
+    /// A Lambda function to respond to HTTP Get methods from API Gateway
+    /// </summary>
+    /// <param name="request"></param>
+    /// <param name="context"></param>
+    /// <returns></returns>
+    member __.Get (request: APIGatewayProxyRequest) (context: ILambdaContext) =
+        sprintf "Request: %s" request.Path
+        |> context.Logger.LogLine
+
+        APIGatewayProxyResponse(
+            StatusCode = int HttpStatusCode.OK,
+            Body = "Hello AWS Serverless",
+            Headers = dict [ ("Content-Type", "text/plain") ]
+        )
