@@ -39,8 +39,14 @@ type Functions() =
         )
 
     member __.Post (request: APIGatewayProxyRequest) (context: ILambdaContext) =
-        sprintf "Request: %s" request.Path
-        |> context.Logger.LogLine
+        sprintf "Request: %s" request.Path |> context.Logger.LogLine
+
+        request.Headers |> Option.ofObj |> Option.map (fun headers ->
+            let headers = headers |> Seq.map (fun x -> x.Key,x.Value) |> Map.ofSeq
+            let resourceState = headers.TryFind "X-Goog-Resource-State"
+            let resourceId = headers.TryFind "X-Goog-Resource-ID"
+            sprintf "state=%s id=%s" (resourceState.ToString()) (resourceId.ToString()) |> context.Logger.LogLine
+        ) |> ignore
 
         APIGatewayProxyResponse(
             StatusCode = int HttpStatusCode.OK,
