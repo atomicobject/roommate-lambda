@@ -14,11 +14,11 @@ module SecretReader =
     let secretOrBust s =
         let envVar = Environment.GetEnvironmentVariable s
         match envVar with
-        | null -> failwith (sprintf "secret %s not found." s) 
-        | "" -> failwith (sprintf "secret %s not found." s)
+        | null -> failwith (sprintf "secret %s not found. (did you set the env var?)" s)
+        | "" -> failwith (sprintf "secret %s not found. (did you set the env var?)" s)
         | e -> e
         
-    let optionalSecret s = 
+    let optionalSecret s =
         let envVar = Environment.GetEnvironmentVariable s
         match envVar with
         | null -> None

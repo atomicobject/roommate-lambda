@@ -1,13 +1,14 @@
 ﻿// Learn more about F# at http://fsharp.org
 
 open System
-open System
 open Roommate
 open Argu
+open Google.Apis.Http
  
 type CLIArguments =
     | Print_Ids
     | Fetch_Calendars
+    | Subscribe_Webhook of calendar:string * endpoint:string
     
 with
     interface IArgParserTemplate with
@@ -15,6 +16,7 @@ with
             match s with
             | Print_Ids -> "print Google calendar IDs"
             | Fetch_Calendars -> "print events from all calendars"
+            | Subscribe_Webhook (_,_) -> "subscribe to webhook for calendar x and endpoint y"
             
 [<EntryPoint>]
 let main argv =
@@ -24,7 +26,12 @@ let main argv =
     
     let results = parser.Parse argv
 
-    let secrets = SecretReader.readSecrets()
+    let secrets =
+        try
+            SecretReader.readSecrets()
+        with ex ->
+            printfn "%s" ex.Message
+            exit 0
     
     match results.GetAllResults() with
     | [] ->
@@ -44,5 +51,13 @@ let main argv =
                     let events = CalendarFetcher.fetchEvents secrets.googleClientId secrets.googleClientSecret calendarId |> Async.RunSynchronously
                     CalendarFetcher.printEvents events
                 )
+        if results.Contains Subscribe_Webhook then
+            let a = 5
+            let calendar,endpoint = results.GetResult Subscribe_Webhook
+            printfn "todo: subscribe webhook %s %s" calendar endpoint
+            
+            let result = CalendarFetcher.activateWebhook secrets.googleClientId secrets.googleClientSecret calendar endpoint |> Async.RunSynchronously
+            
+            ()
 
     0
