@@ -24,7 +24,8 @@ jobs:
           apt install -y zip
       - run:
           name: deploy
-          command:  dotnet lambda deploy-function --disable-interactive true -pl roommate-lambda --function-name roommate --function-role $ROOMMATE_LAMBDA_ROLE
+          command: dotnet lambda deploy-serverless --disable-interactive true -pl roommate-lambda --stack-name roommate-dev --s3-bucket roommate-deploy --region us-east-1
+
 
 workflows:
   version: 2
@@ -36,4 +37,4 @@ workflows:
             - build
           filters:
             branches:
-              only: master
+              only: sam

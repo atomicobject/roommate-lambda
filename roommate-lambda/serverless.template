@@ -8,7 +8,7 @@
     "Get" : {
       "Type" : "AWS::Serverless::Function",
       "Properties": {
-        "Handler": "roommate-lambda::roommate_lambda.Functions::Get",
+        "Handler": "roommate-lambda::RoommateLambda.Functions::Get",
         "Runtime": "dotnetcore2.1",
         "CodeUri": "",
         "MemorySize": 256,
