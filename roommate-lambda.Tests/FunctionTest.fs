@@ -17,7 +17,7 @@ module FunctionTest =
         let response = functions.Get request context
 
         Assert.Equal(200, response.StatusCode)
-        Assert.Equal("Hello AWS Serverless (GET)", response.Body)
+        Assert.Contains("Hello AWS Serverless (GET)", response.Body)
 
     [<Fact>]
     let ``Call HTTP POST on Root``() =
