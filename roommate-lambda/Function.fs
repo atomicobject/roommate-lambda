@@ -13,18 +13,23 @@ open System.Net
 
 
 type Functions() =
-    /// <summary>
-    /// A Lambda function to respond to HTTP Get methods from API Gateway
-    /// </summary>
-    /// <param name="request"></param>
-    /// <param name="context"></param>
-    /// <returns></returns>
+
     member __.Get (request: APIGatewayProxyRequest) (context: ILambdaContext) =
         sprintf "Request: %s" request.Path
         |> context.Logger.LogLine
 
         APIGatewayProxyResponse(
             StatusCode = int HttpStatusCode.OK,
-            Body = "Hello AWS Serverless",
+            Body = "Hello AWS Serverless (GET)",
+            Headers = dict [ ("Content-Type", "text/plain") ]
+        )
+
+    member __.Post (request: APIGatewayProxyRequest) (context: ILambdaContext) =
+        sprintf "Request: %s" request.Path
+        |> context.Logger.LogLine
+
+        APIGatewayProxyResponse(
+            StatusCode = int HttpStatusCode.OK,
+            Body = "Hello AWS Serverless (POST)",
             Headers = dict [ ("Content-Type", "text/plain") ]
         )

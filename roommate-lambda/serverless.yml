@@ -15,11 +15,28 @@ Resources :
       Role: null
       Policies: [ "AWSLambdaBasicExecutionRole" ]
       Events: 
-        PutResource: 
+        GetResource: 
           Type: "Api"
           Properties: 
             Path: "/"
             Method: "GET"
+
+  Post: 
+    Type : "AWS::Serverless::Function"
+    Properties: 
+      Handler: "roommate-lambda::RoommateLambda.Functions::Post"
+      Runtime: "dotnetcore2.1"
+      CodeUri: ""
+      MemorySize: 256
+      Timeout: 30
+      Role: null
+      Policies: [ "AWSLambdaBasicExecutionRole" ]
+      Events: 
+        PutResource: 
+          Type: "Api"
+          Properties: 
+            Path: "/"
+            Method: "POST"
 
 Outputs : 
   ApiURL : 
