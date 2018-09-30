@@ -13,6 +13,6 @@
   "configuration": "Release",
   "framework": "netcoreapp2.1",
   "s3-prefix": "roommate-lambda/",
-  "template": "serverless.template",
+  "template": "serverless.yml",
   "template-parameters": ""
 }

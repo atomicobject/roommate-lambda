@@ -20,7 +20,7 @@
   <ItemGroup>
     <Content Include="aws-lambda-tools-defaults.json" />
     <None Include="Readme.md" />
-    <None Include="serverless.template" />
+    <None Include="serverless.yml" />
   </ItemGroup>
 
   <ItemGroup>
