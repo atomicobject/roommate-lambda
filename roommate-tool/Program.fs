@@ -33,13 +33,15 @@ let main argv =
             printfn "%s" ex.Message
             exit 0
     
+    let calendarService = CalendarFetcher.humanSignIn secrets.googleClientId secrets.googleClientSecret |> Async.RunSynchronously
+
     match results.GetAllResults() with
     | [] ->
         printfn "Roommate Tool"
         printfn "%s" (parser.PrintUsage())
     | _ ->
         if results.Contains Print_Ids then
-            CalendarFetcher.printCalendars secrets.googleClientId secrets.googleClientSecret  |> Async.RunSynchronously
+            CalendarFetcher.printCalendars calendarService |> Async.RunSynchronously
         if results.Contains Fetch_Calendars then
             match secrets.calendarIds with
             | None -> printfn "Please set CALENDAR_IDS environment variable. (fetch IDs with --print_ids)"
@@ -48,13 +50,13 @@ let main argv =
                 printfn "Fetching calendar events.."
 
                 calendarIds |> Seq.iter (fun calendarId ->
-                    let events = CalendarFetcher.fetchEvents secrets.googleClientId secrets.googleClientSecret calendarId |> Async.RunSynchronously
+                    let events = CalendarFetcher.fetchEvents calendarService calendarId |> Async.RunSynchronously
                     CalendarFetcher.printEvents events
                 )
         if results.Contains Subscribe_Webhook then
             let calendar,endpoint = results.GetResult Subscribe_Webhook
             
-            let result = CalendarFetcher.activateWebhook secrets.googleClientId secrets.googleClientSecret calendar endpoint |> Async.RunSynchronously
+            let result = CalendarFetcher.activateWebhook calendarService calendar endpoint |> Async.RunSynchronously
             
             ()
 
