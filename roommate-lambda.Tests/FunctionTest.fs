@@ -1,24 +1,30 @@
 namespace RoommateLambda.Tests
 
+
 open Xunit
 open Amazon.Lambda.TestUtilities
+open Amazon.Lambda.APIGatewayEvents
 
 open RoommateLambda
 
+
 module FunctionTest =
-    (*
-    skip these with e.g. dotnet test --filter Category!=API
-    *)
-    // [<Trait("Category", "API")>]
     [<Fact>]
-    let ``Invoke ToUpper Lambda Function``() =
-        // Invoke the lambda function and confirm the string was upper cased.
-        let lambdaFunction = Function()
+    let ``Call HTTP GET on Root``() =
+        let functions = Functions()
         let context = TestLambdaContext()
-        let upperCase = lambdaFunction.FunctionHandler "hello world" context
+        let request = APIGatewayProxyRequest()
+        let response = functions.Get request context
 
-        Assert.Equal("HELLO WORLD", upperCase)
+        Assert.Equal(200, response.StatusCode)
+        Assert.Contains("Hello AWS Serverless (GET)", response.Body)
 
     [<Fact>]
-    let ``Temp test``() =
-        Assert.Equal(5,5)
+    let ``Call HTTP POST on Root``() =
+        let functions = Functions()
+        let context = TestLambdaContext()
+        let request = APIGatewayProxyRequest()
+        let response = functions.Post request context
+
+        Assert.Equal(200, response.StatusCode)
+        Assert.Equal("Hello AWS Serverless (POST)", response.Body)
