@@ -45,7 +45,8 @@ type Functions() =
             let headers = headers |> Seq.map (fun x -> x.Key,x.Value) |> Map.ofSeq
             let resourceState = headers.TryFind "X-Goog-Resource-State"
             let resourceId = headers.TryFind "X-Goog-Resource-ID"
-            sprintf "state=%s id=%s" (resourceState.ToString()) (resourceId.ToString()) |> context.Logger.LogLine
+            let resourceUri = headers.TryFind "X-Goog-Resource-URI"
+            sprintf "state=%s resource=%s" (resourceState.ToString()) (resourceUri.ToString()) |> context.Logger.LogLine
         ) |> ignore
 
         APIGatewayProxyResponse(
