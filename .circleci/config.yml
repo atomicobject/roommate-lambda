@@ -37,4 +37,4 @@ workflows:
             - build
           filters:
             branches:
-              only: sam
+              only: master

@@ -52,9 +52,7 @@ let main argv =
                     CalendarFetcher.printEvents events
                 )
         if results.Contains Subscribe_Webhook then
-            let a = 5
             let calendar,endpoint = results.GetResult Subscribe_Webhook
-            printfn "todo: subscribe webhook %s %s" calendar endpoint
             
             let result = CalendarFetcher.activateWebhook secrets.googleClientId secrets.googleClientSecret calendar endpoint |> Async.RunSynchronously
             
