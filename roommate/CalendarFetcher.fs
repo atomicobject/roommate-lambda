@@ -1,5 +1,6 @@
 namespace Roommate
 
+open Google.Apis.Auth.OAuth2
 module CalendarFetcher =
 
     open System
@@ -29,17 +30,50 @@ module CalendarFetcher =
             let service = new CalendarService(bar)
             return service
         }
+    let serviceAccountSignIn serviceAccountEmail serviceAccountPrivKey serviceAccountAppName =
+        // https://gist.github.com/tjmoore/6947d152eb5cfa569ef1
+        let scopes = [CalendarService.Scope.CalendarReadonly]
+
+        let init = (new ServiceAccountCredential.Initializer(serviceAccountEmail, Scopes = scopes))
+                    .FromPrivateKey(serviceAccountPrivKey)
+        let cred = new ServiceAccountCredential(init)
+        let service = new CalendarService(new BaseClientService.Initializer(
+                                                HttpClientInitializer = cred, 
+                                                    ApplicationName = serviceAccountAppName))
+        async {
+            return service
+        }
+
+    let apiKeySignIn apiKey =
+        let scopes = [CalendarService.Scope.CalendarReadonly]
+        let tempFile = new FileDataStore("google-filedatastore", true)
+        
+        async {
+            // let! credential = GoogleWebAuthorizationBroker.AuthorizeAsync(ApiK)
+                                // ClientSecrets( ClientId = clientId, ClientSecret = clientSecret), scopes, "user", CancellationToken.None, tempFile) |> Async.AwaitTask
+            // Create the service
+            let bar = new BaseClientService.Initializer(
+                        ApplicationName = "roommate",
+                        // HttpClientInitializer = credential,
+                        ApiKey = apiKey )
+            let service = new CalendarService(bar)
+            return service
+        }
     let printCalendars (calendarService:CalendarService) =
         async {
             let request = calendarService.CalendarList.List()
             let! result = request.ExecuteAsync() |> Async.AwaitTask
-            let aogr_rooms = result.Items 
-                                |> Seq.filter (fun cal -> cal.Summary.Contains("AOGR"))
-                                |> Seq.filter (fun cal -> cal.Summary.Contains("Social") |> not)
-                                
-            aogr_rooms |> Seq.iter (fun item -> printfn "%s,\t%s" item.Id item.Summary)
-            printfn ""
-            printfn "export CALENDAR_IDS=%s" (aogr_rooms |> Seq.map (fun i -> i.Id) |> Seq.reduce (sprintf "%s,%s"))
+            match result.Items.Count with
+            | 0 -> printfn "0 results!"
+            | _ ->
+                printfn "%d results:" (result.Items.Count)
+                let aogr_rooms = result.Items 
+                                    |> Seq.filter (fun cal -> cal.Summary.Contains("AOGR"))
+                                    |> Seq.filter (fun cal -> cal.Summary.Contains("Social") |> not)
+                                    
+                aogr_rooms |> Seq.iter (fun item -> printfn "%s,\t%s" item.Id item.Summary)
+                printfn ""
+                printfn "export CALENDAR_IDS=%s" (aogr_rooms |> Seq.map (fun i -> i.Id) |> Seq.reduce (sprintf "%s,%s"))
         }
         
         

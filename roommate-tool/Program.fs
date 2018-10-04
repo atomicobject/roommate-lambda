@@ -5,10 +5,16 @@ open Roommate
 open Argu
 open Google.Apis.Http
  
+type AuthTypes =
+    | ClientIdSecret
+    | ApiKey
+    | ServiceAccount
+    
 type CLIArguments =
     | Print_Ids
     | Fetch_Calendars
     | Subscribe_Webhook of calendar:string * endpoint:string
+    | Auth of AuthTypes
     
 with
     interface IArgParserTemplate with
@@ -17,6 +23,7 @@ with
             | Print_Ids -> "print Google calendar IDs"
             | Fetch_Calendars -> "print events from all calendars"
             | Subscribe_Webhook (_,_) -> "subscribe to webhook for calendar x and endpoint y"
+            | AuthTypes -> "todo: explain"
             
 [<EntryPoint>]
 let main argv =
@@ -32,14 +39,30 @@ let main argv =
         with ex ->
             printfn "%s" ex.Message
             exit 0
-    
-    let calendarService = CalendarFetcher.humanSignIn secrets.googleClientId secrets.googleClientSecret |> Async.RunSynchronously
 
     match results.GetAllResults() with
     | [] ->
         printfn "Roommate Tool"
         printfn "%s" (parser.PrintUsage())
     | _ ->
+    
+    
+        let authType = results.TryGetResult Auth
+        
+        
+        let calendarService = 
+            match authType with
+            | Some ApiKey ->
+                let apiKey = SecretReader.secretOrBust "googleApiKey"
+                CalendarFetcher.apiKeySignIn apiKey |> Async.RunSynchronously
+            | Some ServiceAccount ->
+                let serviceAccountEmail = SecretReader.secretOrBust "serviceAccountEmail"
+                let serviceAccountPrivKey = SecretReader.secretOrBust "serviceAccountPrivKey"
+                let serviceAccountAppName = SecretReader.secretOrBust "serviceAccountAppName"
+                CalendarFetcher.serviceAccountSignIn serviceAccountEmail serviceAccountPrivKey serviceAccountAppName |> Async.RunSynchronously
+            | _ -> // Some ClientIdSecret or None (non)
+                CalendarFetcher.humanSignIn secrets.googleClientId secrets.googleClientSecret |> Async.RunSynchronously
+        
         if results.Contains Print_Ids then
             CalendarFetcher.printCalendars calendarService |> Async.RunSynchronously
         if results.Contains Fetch_Calendars then
