@@ -49,12 +49,8 @@ module CalendarFetcher =
         let tempFile = new FileDataStore("google-filedatastore", true)
         
         async {
-            // let! credential = GoogleWebAuthorizationBroker.AuthorizeAsync(ApiK)
-                                // ClientSecrets( ClientId = clientId, ClientSecret = clientSecret), scopes, "user", CancellationToken.None, tempFile) |> Async.AwaitTask
-            // Create the service
             let bar = new BaseClientService.Initializer(
                         ApplicationName = "roommate",
-                        // HttpClientInitializer = credential,
                         ApiKey = apiKey )
             let service = new CalendarService(bar)
             return service

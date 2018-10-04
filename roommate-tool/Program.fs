@@ -60,7 +60,7 @@ let main argv =
                 let serviceAccountPrivKey = SecretReader.secretOrBust "serviceAccountPrivKey"
                 let serviceAccountAppName = SecretReader.secretOrBust "serviceAccountAppName"
                 CalendarFetcher.serviceAccountSignIn serviceAccountEmail serviceAccountPrivKey serviceAccountAppName |> Async.RunSynchronously
-            | _ -> // Some ClientIdSecret or None (non)
+            | _ -> // Some ClientIdSecret or None (default to this when nothing is specified)
                 CalendarFetcher.humanSignIn secrets.googleClientId secrets.googleClientSecret |> Async.RunSynchronously
         
         if results.Contains Print_Ids then
