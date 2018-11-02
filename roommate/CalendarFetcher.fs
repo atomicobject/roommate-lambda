@@ -1,5 +1,6 @@
 namespace Roommate
 
+open Google.Apis.Auth.OAuth2
 module CalendarFetcher =
 
     open System
@@ -14,7 +15,7 @@ module CalendarFetcher =
     open Google.Apis.Util.Store;
     open Google.Apis.Services
 
-    let printCalendars clientId clientSecret =
+    let humanSignIn clientId clientSecret =
         let scopes = [CalendarService.Scope.CalendarReadonly]
         let tempFile = new FileDataStore("google-filedatastore", true)
         
@@ -27,44 +28,60 @@ module CalendarFetcher =
                         ApplicationName = "roommate-test",
                         HttpClientInitializer = credential )
             let service = new CalendarService(bar)
+            return service
+        }
+    let serviceAccountSignIn serviceAccountEmail serviceAccountPrivKey serviceAccountAppName =
+        // https://gist.github.com/tjmoore/6947d152eb5cfa569ef1
+        let scopes = [CalendarService.Scope.CalendarReadonly]
 
-            let request = service.CalendarList.List()
+        let init = (new ServiceAccountCredential.Initializer(serviceAccountEmail, Scopes = scopes))
+                    .FromPrivateKey(serviceAccountPrivKey)
+        let cred = new ServiceAccountCredential(init)
+        let service = new CalendarService(new BaseClientService.Initializer(
+                                                HttpClientInitializer = cred, 
+                                                    ApplicationName = serviceAccountAppName))
+        async {
+            return service
+        }
 
-            // Execute the request
-            let! result =request.ExecuteAsync() |> Async.AwaitTask
-            let aogr_rooms = result.Items 
-                                |> Seq.filter (fun cal -> cal.Summary.Contains("AOGR"))
-                                |> Seq.filter (fun cal -> cal.Summary.Contains("Social") |> not)
-                                
-            aogr_rooms |> Seq.iter (fun item -> printfn "%s,\t%s" item.Id item.Summary)
-            printfn ""
-            printfn "export CALENDAR_IDS=%s" (aogr_rooms |> Seq.map (fun i -> i.Id) |> Seq.reduce (sprintf "%s,%s"))
+    let apiKeySignIn apiKey =
+        let scopes = [CalendarService.Scope.CalendarReadonly]
+        let tempFile = new FileDataStore("google-filedatastore", true)
+        
+        async {
+            let bar = new BaseClientService.Initializer(
+                        ApplicationName = "roommate",
+                        ApiKey = apiKey )
+            let service = new CalendarService(bar)
+            return service
+        }
+    let printCalendars (calendarService:CalendarService) =
+        async {
+            let request = calendarService.CalendarList.List()
+            let! result = request.ExecuteAsync() |> Async.AwaitTask
+            match result.Items.Count with
+            | 0 -> printfn "0 results!"
+            | _ ->
+                printfn "%d results:" (result.Items.Count)
+                let aogr_rooms = result.Items 
+                                    |> Seq.filter (fun cal -> cal.Summary.Contains("AOGR"))
+                                    |> Seq.filter (fun cal -> cal.Summary.Contains("Social") |> not)
+                                    
+                aogr_rooms |> Seq.iter (fun item -> printfn "%s,\t%s" item.Id item.Summary)
+                printfn ""
+                printfn "export CALENDAR_IDS=%s" (aogr_rooms |> Seq.map (fun i -> i.Id) |> Seq.reduce (sprintf "%s,%s"))
         }
         
         
-    let fetchEvents clientId clientSecret calendarId =
-
-        let scopes = [CalendarService.Scope.CalendarReadonly]
-        let tempFile = new FileDataStore("google-filedatastore", true)
+    let fetchEvents (calendarService:CalendarService) calendarId =
         async {
-            let! credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-                                ClientSecrets( ClientId = clientId, ClientSecret = clientSecret),
-                                scopes, "user", CancellationToken.None, tempFile) |> Async.AwaitTask
-            // Create the service
-            let bar = new BaseClientService.Initializer(
-                        ApplicationName = "roommate-test",
-                        HttpClientInitializer = credential )
-            let service = new CalendarService(bar)
-
-             // Define parameters of request.
-            let request = service.Events.List(calendarId)
+            let request = calendarService.Events.List(calendarId)
             request.TimeMin <-System.Nullable DateTime.Now
             request.ShowDeleted <- System.Nullable false
             request.SingleEvents <- System.Nullable true
             request.MaxResults <- System.Nullable 10
             request.OrderBy <- System.Nullable EventsResource.ListRequest.OrderByEnum.StartTime
 
-            // Execute the request
             return! request.ExecuteAsync() |> Async.AwaitTask
         }
         
@@ -86,26 +103,13 @@ module CalendarFetcher =
             |> Seq.map (fun (a,b,c) -> a |> someOrBust |> hoursMinutes, b |> someOrBust |> hoursMinutes, c)
             |> Seq.iter (fun (a,b,c) -> printfn "  %s-%s  %s" a b c)
             
-    let activateWebhook clientId clientSecret calendarId url =
-        let scopes = [CalendarService.Scope.CalendarReadonly]
-//        CalendarService.Scope.CalendarEvents
-        let tempFile = new FileDataStore("google-filedatastore", true)
-        
+    let activateWebhook (calendarService:CalendarService) calendarId url =
         async {
-            let! credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-                                ClientSecrets( ClientId = clientId, ClientSecret = clientSecret),
-                                scopes, "user", CancellationToken.None, tempFile) |> Async.AwaitTask
-            // Create the service
-            let bar = new BaseClientService.Initializer(
-                        ApplicationName = "roommate-test",
-                        HttpClientInitializer = credential )
-            let service = new CalendarService(bar)
-
             let guid = Guid.NewGuid().ToString()
             // https://developers.google.com/calendar/v3/push#making-watch-requests
             let channel = new Channel(Address = url, Type = "web_hook",Id = guid)
             
-            let request = service.Events.Watch(channel,calendarId)
+            let request = calendarService.Events.Watch(channel,calendarId)
 
             // Execute the request
             let! result =request.ExecuteAsync() |> Async.AwaitTask
