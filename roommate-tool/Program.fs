@@ -23,7 +23,7 @@ with
             | Print_Ids -> "print Google calendar IDs"
             | Fetch_Calendars -> "print events from all calendars"
             | Subscribe_Webhook (_,_) -> "subscribe to webhook for calendar x and endpoint y"
-            | AuthTypes -> "todo: explain"
+            | Auth _ -> "specify authentication mechanism"
             
 [<EntryPoint>]
 let main argv =
