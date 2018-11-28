@@ -5,10 +5,13 @@ module SecretReader =
 
     type MySecretType = string
     
+    // todo: discriminated union? different secrets for different auth mechanisms?
     type RoommateSecrets = {
         googleClientId : string
         googleClientSecret : string
         calendarIds : string option
+        accessToken : string
+        refreshToken : string
     }
     
     let secretOrBust s =
@@ -26,11 +29,12 @@ module SecretReader =
         | e -> Some e
         
     let readSecrets secretName =
-
         {
             googleClientId = secretOrBust "googleClientId"
             googleClientSecret = secretOrBust "googleClientSecret"
             calendarIds = optionalSecret "CALENDAR_IDS"
+            accessToken = secretOrBust "googleClientAccessToken"
+            refreshToken = secretOrBust "googleClientRefreshToken"
         }
             
                             

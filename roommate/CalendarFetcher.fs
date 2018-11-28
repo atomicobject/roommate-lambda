@@ -15,6 +15,11 @@ module CalendarFetcher =
     open Google.Apis.Util.Store;
     open Google.Apis.Services
 
+    let accessTokenSignIn clientId clientSecret =
+        // todo
+        async {
+            return new CalendarService()
+        }
     let humanSignIn clientId clientSecret =
         let scopes = [CalendarService.Scope.CalendarReadonly]
         let tempFile = new FileDataStore("google-filedatastore", true)
