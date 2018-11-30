@@ -64,7 +64,7 @@ let main argv =
             | x when x.IsNone || x = (Some ClientIdSecret) -> // Some ClientIdSecret or None (default to this when nothing is specified)
                 CalendarFetcher.humanSignIn secrets.googleClientId secrets.googleClientSecret |> Async.RunSynchronously
             | Some AccessToken ->
-                CalendarFetcher.accessTokenSignIn secrets.accessToken secrets.refreshToken |> Async.RunSynchronously
+                CalendarFetcher.accessTokenSignIn secrets.fullJson secrets.googleClientId secrets.googleClientSecret secrets.accessToken secrets.refreshToken |> Async.RunSynchronously
             | _ -> failwith "oops"
 
         if results.Contains Print_Ids then

@@ -7,6 +7,8 @@ module CalendarFetcher =
     open System.IO
     open System.Threading
     
+    open Google.Apis.Auth.OAuth2
+    open Google.Apis.Auth.OAuth2.Flows
     open System
     open Google.Apis.Auth.OAuth2;
     open Google.Apis.Calendar.v3;
@@ -15,19 +17,15 @@ module CalendarFetcher =
     open Google.Apis.Util.Store;
     open Google.Apis.Services
 
-    let accessTokenSignIn clientId clientSecret =
-        // todo
-        async {
-            return new CalendarService()
-        }
-    let humanSignIn clientId clientSecret =
+        
+    let commonSignIn clientId clientSecret dataStore =
         let scopes = [CalendarService.Scope.CalendarReadonly]
-        let tempFile = new FileDataStore("google-filedatastore", true)
         
         async {
             let! credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
                                 ClientSecrets( ClientId = clientId, ClientSecret = clientSecret),
-                                scopes, "user", CancellationToken.None, tempFile) |> Async.AwaitTask
+                                scopes, "user", CancellationToken.None, dataStore) |> Async.AwaitTask
+            printfn "UserId: %s" credential.UserId
             // Create the service
             let bar = new BaseClientService.Initializer(
                         ApplicationName = "roommate-test",
@@ -35,6 +33,17 @@ module CalendarFetcher =
             let service = new CalendarService(bar)
             return service
         }
+        
+    let accessTokenSignIn fullJson clientId clientSecret accessToken refreshToken =
+        let deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<Responses.TokenResponse>(fullJson)
+        let dataStore = new google_data_store.MyStore(deserialized)
+        commonSignIn clientId clientSecret dataStore
+            
+    let humanSignIn clientId clientSecret =
+        let dataStore = new FileDataStore("google-filedatastore", true)
+//        let dataStore = new google_data_store.MyStore("google-filedatastore", true)
+        commonSignIn clientId clientSecret dataStore
+    
     let serviceAccountSignIn serviceAccountEmail serviceAccountPrivKey serviceAccountAppName =
         // https://gist.github.com/tjmoore/6947d152eb5cfa569ef1
         let scopes = [CalendarService.Scope.CalendarReadonly]
