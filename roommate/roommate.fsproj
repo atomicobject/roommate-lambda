@@ -14,8 +14,4 @@
     <PackageReference Include="Google.Apis.Calendar.v3" Version="1.36.1.1424" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\google-data-store\google-data-store.csproj" />
-  </ItemGroup>
-
 </Project>
