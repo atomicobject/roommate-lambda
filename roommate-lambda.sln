@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
@@ -11,7 +11,7 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "roommate-tool", "roommate-t
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "roommate", "roommate\roommate.fsproj", "{476B1B33-CEA8-422A-A7C0-570D48E95B66}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "google-data-store", "google-data-store\google-data-store.csproj", "{E44AFB68-0A63-42C8-A80B-FB782605A32A}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "roommate.test", "roommate.test\roommate.test.fsproj", "{A36008CE-B906-4B25-8D93-8CE8CEC349BC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -74,17 +74,17 @@ Global
 		{476B1B33-CEA8-422A-A7C0-570D48E95B66}.Release|x64.Build.0 = Release|Any CPU
 		{476B1B33-CEA8-422A-A7C0-570D48E95B66}.Release|x86.ActiveCfg = Release|Any CPU
 		{476B1B33-CEA8-422A-A7C0-570D48E95B66}.Release|x86.Build.0 = Release|Any CPU
-		{E44AFB68-0A63-42C8-A80B-FB782605A32A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E44AFB68-0A63-42C8-A80B-FB782605A32A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E44AFB68-0A63-42C8-A80B-FB782605A32A}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{E44AFB68-0A63-42C8-A80B-FB782605A32A}.Debug|x64.Build.0 = Debug|Any CPU
-		{E44AFB68-0A63-42C8-A80B-FB782605A32A}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{E44AFB68-0A63-42C8-A80B-FB782605A32A}.Debug|x86.Build.0 = Debug|Any CPU
-		{E44AFB68-0A63-42C8-A80B-FB782605A32A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E44AFB68-0A63-42C8-A80B-FB782605A32A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E44AFB68-0A63-42C8-A80B-FB782605A32A}.Release|x64.ActiveCfg = Release|Any CPU
-		{E44AFB68-0A63-42C8-A80B-FB782605A32A}.Release|x64.Build.0 = Release|Any CPU
-		{E44AFB68-0A63-42C8-A80B-FB782605A32A}.Release|x86.ActiveCfg = Release|Any CPU
-		{E44AFB68-0A63-42C8-A80B-FB782605A32A}.Release|x86.Build.0 = Release|Any CPU
+		{A36008CE-B906-4B25-8D93-8CE8CEC349BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A36008CE-B906-4B25-8D93-8CE8CEC349BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A36008CE-B906-4B25-8D93-8CE8CEC349BC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A36008CE-B906-4B25-8D93-8CE8CEC349BC}.Debug|x64.Build.0 = Debug|Any CPU
+		{A36008CE-B906-4B25-8D93-8CE8CEC349BC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A36008CE-B906-4B25-8D93-8CE8CEC349BC}.Debug|x86.Build.0 = Debug|Any CPU
+		{A36008CE-B906-4B25-8D93-8CE8CEC349BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A36008CE-B906-4B25-8D93-8CE8CEC349BC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A36008CE-B906-4B25-8D93-8CE8CEC349BC}.Release|x64.ActiveCfg = Release|Any CPU
+		{A36008CE-B906-4B25-8D93-8CE8CEC349BC}.Release|x64.Build.0 = Release|Any CPU
+		{A36008CE-B906-4B25-8D93-8CE8CEC349BC}.Release|x86.ActiveCfg = Release|Any CPU
+		{A36008CE-B906-4B25-8D93-8CE8CEC349BC}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
