@@ -37,7 +37,6 @@ module WrappedDataStoreTest =
         subject.StoreAsync("key","val") |> Async.AwaitTask |> Async.RunSynchronously
         subject.DeleteAsync("key")  |> Async.AwaitTask |> Async.RunSynchronously
         Assert.Equal(inMemoryStore.getMap().Count,0)
-        (fun () -> subject.GetAsync<string>("key").Result |> ignore) |> should throw typeof<System.AggregateException>
 
     [<Fact>]
     let ``can clear``() =
