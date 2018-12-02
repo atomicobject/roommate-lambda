@@ -7,7 +7,6 @@ open System.Xml.Schema
 module WrappedDataStore =
 
     // let mutable x: obj option = None
-    let mutable x: Map<string,obj> = [] |> Map.ofList
 
     type impls = {
         get: string -> Async<obj>
@@ -16,33 +15,16 @@ module WrappedDataStore =
         store: string -> obj -> Async<unit>
     }
 
-    let inMemory : impls = {
-        get = fun (key:string) ->
-            async {
-                return match x.TryFind key with
-                        | None -> failwith "bonk"
-                        | Some v -> v
-            }
-        del = fun key ->
-            x <- x.Remove(key)
-            async {return () }
-        clear = fun () ->
-            x <- [] |> Map.ofList
-            async {return () }
-        store = fun (key:string) (value:obj) ->
-            x <- x.Add(key,value)
-            async {return () }
-    }
+
+
     let castAsync<'T> (o:Async<obj>) : Async<'T> =
         async {
             let! oo = o
             return oo :?> 'T
         } 
-        // failwith ""
 
     // https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/generics/constraints
     type WrappedDataStore(impls:impls) =
-
         let _impls = impls
 
         interface IDataStore with
@@ -58,3 +40,55 @@ module WrappedDataStore =
 
             member __.ClearAsync() =
                 _impls.clear () |> Async.StartAsTask :> Task
+
+
+    type InMemoryDataStore () =
+        let mutable map: Map<string,obj> = [] |> Map.ofList
+
+        let inMemory : impls = {
+            get = fun (key:string) ->
+                async {
+                    return match map.TryFind key with
+                            | None -> null //failwith "bonk"
+                            | Some v -> v
+                }
+            del = fun key ->
+                map <- map.Remove(key)
+                async {return () }
+            clear = fun () ->
+                map <- [] |> Map.ofList
+                async {return () }
+            store = fun (key:string) (value:obj) ->
+                map <- map.Add(key,value)
+                async {return () }
+        }
+        member this.store = new WrappedDataStore(inMemory)
+        member this.getMap () = map
+
+    type LoggingDataStore () =
+        let mutable map: Map<string,obj> = [] |> Map.ofList
+
+        let logFns : impls = {
+            get = fun (key:string) ->
+                printfn "get %s" key
+                async {
+                    return match map.TryFind key with
+                            | None -> null
+                            | Some v -> v
+                }
+            del = fun key ->
+                printfn "del %s" key
+                map <- map.Remove(key)
+                async {return () }
+            clear = fun () ->
+                printfn "clear"
+                map <- [] |> Map.ofList
+                async {return () }
+            store = fun (key:string) (value:obj) ->
+                let json = Newtonsoft.Json.JsonConvert.SerializeObject(value)
+                printfn "store %s %s" key json
+                map <- map.Add(key,value)
+                async {return () }
+        }
+        member this.store = new WrappedDataStore(logFns)
+        member this.getMap () = map

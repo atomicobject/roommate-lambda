@@ -1,6 +1,8 @@
 namespace Roommate
 
 open Google.Apis.Auth.OAuth2
+open WrappedDataStore
+open Google.Apis.Util.Store
 module CalendarFetcher =
 
     open System
@@ -34,15 +36,17 @@ module CalendarFetcher =
             return service
         }
         
-    let accessTokenSignIn fullJson clientId clientSecret accessToken refreshToken =
-//        let deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<Responses.TokenResponse>(fullJson)
-//        let dataStore = new google_data_store.MyStore(deserialized)
-//        commonSignIn clientId clientSecret dataStore
-        failwith "unimp"
+    let accessTokenSignIn clientId clientSecret tokenResponseJson =
+        printfn "Performing resumption sign-in with TokenResponse object"
+        let deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<Responses.TokenResponse>(tokenResponseJson)
+        let dataStore = (new WrappedDataStore.LoggingDataStore())
+        (dataStore.store :> IDataStore).StoreAsync("user",deserialized) |> Async.AwaitTask |> Async.RunSynchronously
+        commonSignIn clientId clientSecret dataStore.store
             
     let humanSignIn clientId clientSecret =
-        let dataStore = new FileDataStore("google-filedatastore", true)
-//        let dataStore = new google_data_store.MyStore("google-filedatastore", true)
+        printfn "Performing initial sign-in with clientId and clientSecret"
+        // let dataStore = new FileDataStore("google-filedatastore", true)
+        let dataStore = (new WrappedDataStore.LoggingDataStore()).store
         commonSignIn clientId clientSecret dataStore
     
     let serviceAccountSignIn serviceAccountEmail serviceAccountPrivKey serviceAccountAppName =
