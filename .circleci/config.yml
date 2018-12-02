@@ -6,7 +6,7 @@ jobs:
     steps:
       - checkout
       - run: dotnet build
-      - run: dotnet test roommate-lambda.Tests/roommate-lambda.Tests.fsproj --filter Category!=API
+      - run: dotnet test
 
   deploy:
     docker:
@@ -25,7 +25,6 @@ jobs:
       - run:
           name: deploy
           command: dotnet lambda deploy-serverless --disable-interactive true -pl roommate-lambda --stack-name roommate-dev --s3-bucket roommate-deploy --region us-east-1 -tp GoogleVerificationCode=$GOOGLE_VERIFICATION_CODE
-
 
 workflows:
   version: 2

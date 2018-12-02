@@ -9,6 +9,7 @@ type AuthTypes =
     | ClientIdSecret
     | ApiKey
     | ServiceAccount
+    | AccessToken
     
 type CLIArguments =
     | Print_Ids
@@ -60,9 +61,12 @@ let main argv =
                 let serviceAccountPrivKey = SecretReader.secretOrBust "serviceAccountPrivKey"
                 let serviceAccountAppName = SecretReader.secretOrBust "serviceAccountAppName"
                 CalendarFetcher.serviceAccountSignIn serviceAccountEmail serviceAccountPrivKey serviceAccountAppName |> Async.RunSynchronously
-            | _ -> // Some ClientIdSecret or None (default to this when nothing is specified)
+            | x when x.IsNone || x = (Some ClientIdSecret) ->
                 CalendarFetcher.humanSignIn secrets.googleClientId secrets.googleClientSecret |> Async.RunSynchronously
-        
+            | Some AccessToken ->
+                CalendarFetcher.accessTokenSignIn secrets.googleClientId secrets.googleClientSecret secrets.fullJson |> Async.RunSynchronously
+            | _ -> failwith "oops"
+
         if results.Contains Print_Ids then
             CalendarFetcher.printCalendars calendarService |> Async.RunSynchronously
         if results.Contains Fetch_Calendars then
