@@ -7,6 +7,7 @@ open Amazon.Lambda.APIGatewayEvents
 open System.Net
 
 open System
+open Roommate.SecretReader
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [<assembly: LambdaSerializer(typeof<Amazon.Lambda.Serialization.Json.JsonSerializer>)>]
@@ -16,7 +17,7 @@ open System
 type Functions() =
 
     member __.Get (request: APIGatewayProxyRequest) (context: ILambdaContext) =
-        let verificationCode = Environment.GetEnvironmentVariable "GOOGLE_VERIFICATION_CODE"
+        let verificationCode = secretOrBust "GOOGLE_VERIFICATION_CODE"
 
         sprintf "Request: %s" request.Path
         |> context.Logger.LogLine
@@ -61,10 +62,11 @@ type Functions() =
         context.Logger.LogLine("Received push notification! Headers:")
         googHeaders |> Map.toList |> List.iter( fun (k,v) -> context.Logger.LogLine(sprintf "%s : %s" k v))
 
-        let calIdsStr = Environment.GetEnvironmentVariable "CALENDAR_IDS"
-        let googleTokenJson = Environment.GetEnvironmentVariable "googleTokenJson"
-        let googleClientId = Environment.GetEnvironmentVariable "googleClientId"
-        let googleClientSecret = Environment.GetEnvironmentVariable "googleClientSecret"
+            // googleClientId = secretOrBust "googleClientId"
+        let calIdsStr = secretOrBust "CALENDAR_IDS"
+        let googleTokenJson = secretOrBust "googleTokenJson"
+        let googleClientId = secretOrBust "googleClientId"
+        let googleClientSecret = secretOrBust "googleClientSecret"
 
         let calendarIds = calIdsStr.Split(",")
         match googHeaders.TryFind "X-Goog-Resource-ID" with
