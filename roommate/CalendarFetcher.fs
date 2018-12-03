@@ -104,11 +104,11 @@ module CalendarFetcher =
             return! request.ExecuteAsync() |> Async.AwaitTask
         }
         
-    let printEvents (events:Events) =
-        printfn "\n==== %s %s ====" events.Summary events.Description
+    let logEvents (events:Events) (logFn: string -> unit) =
+        logFn (sprintf "\n==== %s %s ====" events.Summary events.Description)
         
         if events.Items.Count = 0 then
-            printfn "No upcoming events found."
+            logFn "No upcoming events found."
         
         let hoursMinutes (d:DateTime) = sprintf "%2d:%02d" d.TimeOfDay.Hours d.TimeOfDay.Minutes
             
@@ -120,7 +120,7 @@ module CalendarFetcher =
             |> Seq.map (fun e -> e.Start.DateTime |> Option.ofNullable,e.End.DateTime |> Option.ofNullable,e.Summary)
             |> Seq.filter (fun (a,b,_) -> a.IsSome && b.IsSome)
             |> Seq.map (fun (a,b,c) -> a |> someOrBust |> hoursMinutes, b |> someOrBust |> hoursMinutes, c)
-            |> Seq.iter (fun (a,b,c) -> printfn "  %s-%s  %s" a b c)
+            |> Seq.iter (fun (a,b,c) -> logFn (sprintf "  %s-%s  %s" a b c))
             
     let activateWebhook (calendarService:CalendarService) calendarId url =
         async {
@@ -136,3 +136,6 @@ module CalendarFetcher =
         }
         
         
+
+    let printEvents (events:Events) =
+        logEvents events (printfn "%s")

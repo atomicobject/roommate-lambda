@@ -8,6 +8,7 @@ open System.Net
 
 open System
 open Roommate.SecretReader
+open Roommate.CalendarFetcher
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [<assembly: LambdaSerializer(typeof<Amazon.Lambda.Serialization.Json.JsonSerializer>)>]
@@ -76,7 +77,11 @@ type Functions() =
             let calId = calURI.Split("/") |> List.ofArray |> List.find (fun x -> x.Contains "atomicobject.com")
 
             if calendarIds |> Array.contains calId then
-                context.Logger.LogLine(sprintf "Calendar %s is in my list! TODO: fetch its events." calId)
+                context.Logger.LogLine(sprintf "Calendar %s is in my list!" calId)
+                let calendarService = CalendarFetcher.accessTokenSignIn googleClientId googleClientSecret googleTokenJson |> Async.RunSynchronously
+
+                let events = CalendarFetcher.fetchEvents calendarService calId |> Async.RunSynchronously
+                CalendarFetcher.logEvents events (fun (s:string) -> context.Logger.LogLine(s))
             else
                 context.Logger.LogLine(sprintf "Calendar %s is not in my list!" calId)
 
