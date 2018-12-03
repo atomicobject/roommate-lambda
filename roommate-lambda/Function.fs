@@ -68,10 +68,12 @@ type Functions() =
         let googleClientSecret = secretOrBust "googleClientSecret"
 
         let calendarIds = calIdsStr.Split(",")
-        match googHeaders.TryFind "X-Goog-Resource-ID" with
+        match googHeaders.TryFind "X-Goog-Resource-URI" with
         |None ->
             context.Logger.LogLine("No X-Google-Resource-ID header found.")
-        |Some calId ->
+        |Some calURI ->
+            // todo: unit test
+            let calId = calURI.Split("@").[0].Split("/") |> List.ofArray |> List.rev |> List.head
 
             if calendarIds |> Array.contains calId then
                 context.Logger.LogLine(sprintf "Calendar %s is in my list! TODO: fetch its events." calId)
