@@ -62,7 +62,6 @@ type Functions() =
         context.Logger.LogLine("Received push notification! Headers:")
         googHeaders |> Map.toList |> List.iter( fun (k,v) -> context.Logger.LogLine(sprintf "%s : %s" k v))
 
-            // googleClientId = secretOrBust "googleClientId"
         let calIdsStr = secretOrBust "CALENDAR_IDS"
         let googleTokenJson = secretOrBust "googleTokenJson"
         let googleClientId = secretOrBust "googleClientId"
