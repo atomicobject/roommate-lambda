@@ -5,7 +5,7 @@ jobs:
       - image: microsoft/dotnet:2.1-sdk
     steps:
       - checkout
-      - run: dotnet build
+      - run: dotnet --version && dotnet build
       - run: dotnet test
 
   deploy:
