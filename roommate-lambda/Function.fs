@@ -53,7 +53,9 @@ type Functions() =
 
         let maybeHeaders = request.Headers |> Option.ofObj
         let googHeaders = match maybeHeaders with
-                            | None -> failwith "no headers!"
+                            | None ->
+                                context.Logger.LogLine "No headers."
+                                [] |> Map.ofList
                             | Some h -> h |> toMap |> Map.filter ( fun k _ -> k.Contains "Goog")
 
         context.Logger.LogLine("Received push notification! Headers:")
