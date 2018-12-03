@@ -23,7 +23,8 @@ module FunctionTest =
     let ``Call HTTP POST on Root``() =
         let functions = Functions()
         let context = TestLambdaContext()
-        let request = APIGatewayProxyRequest()
+        let emptyMap = [] |> Map.ofList
+        let request = APIGatewayProxyRequest(Headers = emptyMap)
         let response = functions.Post request context
 
         Assert.Equal(200, response.StatusCode)
