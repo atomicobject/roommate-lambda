@@ -78,10 +78,10 @@ type Functions() =
 
             if calendarIds |> Array.contains calId then
                 context.Logger.LogLine(sprintf "Calendar %s is in my list!" calId)
-                let calendarService = CalendarFetcher.accessTokenSignIn googleClientId googleClientSecret googleTokenJson |> Async.RunSynchronously
+                let calendarService = accessTokenSignIn googleClientId googleClientSecret googleTokenJson |> Async.RunSynchronously
 
-                let events = CalendarFetcher.fetchEvents calendarService calId |> Async.RunSynchronously
-                CalendarFetcher.logEvents events (fun (s:string) -> context.Logger.LogLine(s))
+                let events = fetchEvents calendarService calId |> Async.RunSynchronously
+                logEvents events (fun (s:string) -> context.Logger.LogLine(s))
             else
                 context.Logger.LogLine(sprintf "Calendar %s is not in my list!" calId)
 
