@@ -73,7 +73,7 @@ type Functions() =
             context.Logger.LogLine("No X-Google-Resource-ID header found.")
         |Some calURI ->
             // todo: unit test
-            let calId = calURI.Split("@").[0].Split("/") |> List.ofArray |> List.rev |> List.head
+            let calId = calURI.Split("/") |> List.ofArray |> List.find (fun x -> x.Contains "atomicobject.com")
 
             if calendarIds |> Array.contains calId then
                 context.Logger.LogLine(sprintf "Calendar %s is in my list! TODO: fetch its events." calId)
