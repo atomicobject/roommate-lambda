@@ -64,9 +64,9 @@ type Functions() =
         googHeaders |> Map.toList |> List.iter( fun (k,v) -> context.Logger.LogLine(sprintf "%s : %s" k v))
 
         let calIdsStr = secretOrBust "CALENDAR_IDS"
-        let googleTokenJson = secretOrBust "googleTokenJson"
-        let googleClientId = secretOrBust "googleClientId"
-        let googleClientSecret = secretOrBust "googleClientSecret"
+        let serviceAccountEmail = secretOrBust "serviceAccountEmail"
+        let serviceAccountPrivKey = secretOrBust "serviceAccountPrivKey"
+        let serviceAccountAppName = secretOrBust "serviceAccountAppName"
 
         let calendarIds = calIdsStr.Split(",")
         match googHeaders.TryFind "X-Goog-Resource-URI" with
@@ -78,7 +78,7 @@ type Functions() =
 
             if calendarIds |> Array.contains calId then
                 context.Logger.LogLine(sprintf "Calendar %s is in my list!" calId)
-                let calendarService = accessTokenSignIn googleClientId googleClientSecret googleTokenJson |> Async.RunSynchronously
+                let calendarService = serviceAccountSignIn serviceAccountEmail serviceAccountPrivKey serviceAccountAppName |> Async.RunSynchronously
 
                 let events = fetchEvents calendarService calId |> Async.RunSynchronously
                 logEvents events (fun (s:string) -> context.Logger.LogLine(s))
