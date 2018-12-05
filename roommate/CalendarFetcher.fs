@@ -3,6 +3,8 @@ namespace Roommate
 open Google.Apis.Auth.OAuth2
 open WrappedDataStore
 open Google.Apis.Util.Store
+open Google.Apis.Calendar.v3
+open Google.Apis.Calendar.v3.Data
 module CalendarFetcher =
 
     open System
@@ -51,7 +53,7 @@ module CalendarFetcher =
     
     let serviceAccountSignIn serviceAccountEmail serviceAccountPrivKey serviceAccountAppName =
         // https://gist.github.com/tjmoore/6947d152eb5cfa569ef1
-        let scopes = [CalendarService.Scope.CalendarReadonly]
+        let scopes = [CalendarService.Scope.CalendarReadonly;CalendarService.Scope.CalendarEvents]
 
         let init = (new ServiceAccountCredential.Initializer(serviceAccountEmail, Scopes = scopes))
                     .FromPrivateKey(serviceAccountPrivKey)
@@ -83,14 +85,31 @@ module CalendarFetcher =
             | _ ->
                 printfn "%d results:" (result.Items.Count)
                 let aogr_rooms = result.Items 
-                                    |> Seq.filter (fun cal -> cal.Summary.Contains("AOGR"))
-                                    |> Seq.filter (fun cal -> cal.Summary.Contains("Social") |> not)
+                                    // |> Seq.filter (fun cal -> cal.Summary.Contains("AOGR"))
+                                    // |> Seq.filter (fun cal -> cal.Summary.Contains("Social") |> not)
                                     
                 aogr_rooms |> Seq.iter (fun item -> printfn "%s,\t%s" item.Id item.Summary)
                 printfn ""
                 printfn "export CALENDAR_IDS=%s" (aogr_rooms |> Seq.map (fun i -> i.Id) |> Seq.reduce (sprintf "%s,%s"))
         }
         
+    let createEvent (calendarService:CalendarService) calendarId attendee =
+        async {
+            // let event = new Google.Apis.Calendar.v3.EventsResource
+            let start = new EventDateTime(DateTime = System.Nullable System.DateTime.Now)
+            let finish = new EventDateTime(DateTime = System.Nullable (System.DateTime.Now.AddMinutes(15.0)))
+            let event = new Event()
+            event.Start <- start
+            event.End <- finish
+            event.Summary <- "roommate test (event created programmatically)"
+            let room = new EventAttendee()
+            room.Email <- attendee
+            // room.Id <- attendee
+            event.Attendees <- [|room|]
+            // start.DateTime <- System.Nullable System.DateTime.Now
+            let request = calendarService.Events.Insert(event, calendarId)
+            return! request.ExecuteAsync() |> Async.AwaitTask
+        }
         
     let fetchEvents (calendarService:CalendarService) calendarId =
         async {

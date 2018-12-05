@@ -4,6 +4,7 @@ open System
 open Roommate
 open Argu
 open Google.Apis.Http
+open System.Globalization
  
 type AuthTypes =
     | ClientIdSecret
@@ -16,6 +17,7 @@ type CLIArguments =
     | Fetch_Calendars
     | Subscribe_Webhook of calendar:string * endpoint:string
     | Auth of AuthTypes
+    | Create_Event // of TODO
     
 with
     interface IArgParserTemplate with
@@ -25,6 +27,7 @@ with
             | Fetch_Calendars -> "print events from all calendars"
             | Subscribe_Webhook (_,_) -> "subscribe to webhook for calendar x and endpoint y"
             | Auth _ -> "specify authentication mechanism"
+            | Create_Event -> "create event"
             
 [<EntryPoint>]
 let main argv =
@@ -85,6 +88,13 @@ let main argv =
             
             let result = CalendarFetcher.activateWebhook calendarService calendar endpoint |> Async.RunSynchronously
             
+            ()
+        if results.Contains Create_Event then
+            printfn "create event!"
+            let calendarId = "atomicobject.com_60eh168tq1oiaji3eool392gn4@group.calendar.google.com"
+            let attendee = "atomicobject.com_3935353434383037353937@resource.calendar.google.com"
+            let result = (CalendarFetcher.createEvent calendarService calendarId attendee |> Async.RunSynchronously)
+            printfn "created? event %s" (result.ToString())
             ()
 
     0
