@@ -17,7 +17,7 @@ type CLIArguments =
     | Fetch_Calendars
     | Subscribe_Webhook of calendar:string * endpoint:string
     | Auth of AuthTypes
-    | Create_Event // of TODO
+    | Create_Event of calendarId:string * attendee:string
     
 with
     interface IArgParserTemplate with
@@ -25,9 +25,9 @@ with
             match s with
             | Print_Ids -> "print Google calendar IDs"
             | Fetch_Calendars -> "print events from all calendars"
-            | Subscribe_Webhook (_,_) -> "subscribe to webhook for calendar x and endpoint y"
+            | Subscribe_Webhook _ -> "subscribe to webhook for calendar x and endpoint y"
             | Auth _ -> "specify authentication mechanism"
-            | Create_Event -> "create event"
+            | Create_Event _ -> "create event"
             
 [<EntryPoint>]
 let main argv =
@@ -91,10 +91,9 @@ let main argv =
             ()
         if results.Contains Create_Event then
             printfn "create event!"
-            let calendarId = "atomicobject.com_60eh168tq1oiaji3eool392gn4@group.calendar.google.com"
-            let attendee = "atomicobject.com_3935353434383037353937@resource.calendar.google.com"
+            let calendarId,attendee= results.GetResult Create_Event
             let result = (CalendarFetcher.createEvent calendarService calendarId attendee |> Async.RunSynchronously)
-            printfn "created? event %s" (result.ToString())
+            printfn "created event %s" (result.ToString())
             ()
 
     0

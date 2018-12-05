@@ -96,8 +96,8 @@ module CalendarFetcher =
     let createEvent (calendarService:CalendarService) calendarId attendee =
         async {
             // let event = new Google.Apis.Calendar.v3.EventsResource
-            let start = new EventDateTime(DateTime = System.Nullable System.DateTime.Now)
-            let finish = new EventDateTime(DateTime = System.Nullable (System.DateTime.Now.AddMinutes(15.0)))
+            let start = new EventDateTime(DateTime = System.Nullable (System.DateTime.Now.AddHours(12.0)))
+            let finish = new EventDateTime(DateTime = System.Nullable (System.DateTime.Now.AddHours(12.0).AddMinutes(15.0)))
             let event = new Event()
             event.Start <- start
             event.End <- finish
