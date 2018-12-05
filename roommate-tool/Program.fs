@@ -4,6 +4,7 @@ open System
 open Roommate
 open Argu
 open Google.Apis.Http
+open System.Globalization
  
 type AuthTypes =
     | ClientIdSecret
@@ -16,6 +17,7 @@ type CLIArguments =
     | Fetch_Calendars
     | Subscribe_Webhook of calendar:string * endpoint:string
     | Auth of AuthTypes
+    | Create_Event of calendarId:string * attendee:string
     
 with
     interface IArgParserTemplate with
@@ -23,8 +25,9 @@ with
             match s with
             | Print_Ids -> "print Google calendar IDs"
             | Fetch_Calendars -> "print events from all calendars"
-            | Subscribe_Webhook (_,_) -> "subscribe to webhook for calendar x and endpoint y"
+            | Subscribe_Webhook _ -> "subscribe to webhook for calendar x and endpoint y"
             | Auth _ -> "specify authentication mechanism"
+            | Create_Event _ -> "create event"
             
 [<EntryPoint>]
 let main argv =
@@ -64,7 +67,7 @@ let main argv =
             | x when x.IsNone || x = (Some ClientIdSecret) ->
                 CalendarFetcher.humanSignIn secrets.googleClientId secrets.googleClientSecret |> Async.RunSynchronously
             | Some AccessToken ->
-                CalendarFetcher.accessTokenSignIn secrets.googleClientId secrets.googleClientSecret secrets.fullJson |> Async.RunSynchronously
+                CalendarFetcher.accessTokenSignIn secrets.googleClientId secrets.googleClientSecret secrets.googleTokenJson |> Async.RunSynchronously
             | _ -> failwith "oops"
 
         if results.Contains Print_Ids then
@@ -85,6 +88,12 @@ let main argv =
             
             let result = CalendarFetcher.activateWebhook calendarService calendar endpoint |> Async.RunSynchronously
             
+            ()
+        if results.Contains Create_Event then
+            printfn "create event!"
+            let calendarId,attendee= results.GetResult Create_Event
+            let result = (CalendarFetcher.createEvent calendarService calendarId attendee |> Async.RunSynchronously)
+            printfn "created event %s" (result.ToString())
             ()
 
     0

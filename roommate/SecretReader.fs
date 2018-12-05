@@ -12,7 +12,7 @@ module SecretReader =
         calendarIds : string option
         accessToken : string
         refreshToken : string
-        fullJson : string
+        googleTokenJson : string
     }
     
     let secretOrBust s =
@@ -36,7 +36,7 @@ module SecretReader =
             calendarIds = optionalSecret "CALENDAR_IDS"
             accessToken = secretOrBust "googleClientAccessToken"
             refreshToken = secretOrBust "googleClientRefreshToken"
-            fullJson = secretOrBust "fullJson"
+            googleTokenJson = secretOrBust "googleTokenJson"
         }
             
                             

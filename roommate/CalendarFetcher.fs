@@ -3,6 +3,8 @@ namespace Roommate
 open Google.Apis.Auth.OAuth2
 open WrappedDataStore
 open Google.Apis.Util.Store
+open Google.Apis.Calendar.v3
+open Google.Apis.Calendar.v3.Data
 module CalendarFetcher =
 
     open System
@@ -51,7 +53,7 @@ module CalendarFetcher =
     
     let serviceAccountSignIn serviceAccountEmail serviceAccountPrivKey serviceAccountAppName =
         // https://gist.github.com/tjmoore/6947d152eb5cfa569ef1
-        let scopes = [CalendarService.Scope.CalendarReadonly]
+        let scopes = [CalendarService.Scope.CalendarReadonly;CalendarService.Scope.CalendarEvents]
 
         let init = (new ServiceAccountCredential.Initializer(serviceAccountEmail, Scopes = scopes))
                     .FromPrivateKey(serviceAccountPrivKey)
@@ -83,14 +85,28 @@ module CalendarFetcher =
             | _ ->
                 printfn "%d results:" (result.Items.Count)
                 let aogr_rooms = result.Items 
-                                    |> Seq.filter (fun cal -> cal.Summary.Contains("AOGR"))
-                                    |> Seq.filter (fun cal -> cal.Summary.Contains("Social") |> not)
+                                    // |> Seq.filter (fun cal -> cal.Summary.Contains("AOGR"))
+                                    // |> Seq.filter (fun cal -> cal.Summary.Contains("Social") |> not)
                                     
                 aogr_rooms |> Seq.iter (fun item -> printfn "%s,\t%s" item.Id item.Summary)
                 printfn ""
                 printfn "export CALENDAR_IDS=%s" (aogr_rooms |> Seq.map (fun i -> i.Id) |> Seq.reduce (sprintf "%s,%s"))
         }
         
+    let createEvent (calendarService:CalendarService) calendarId attendee =
+        async {
+            let start = new EventDateTime(DateTime = System.Nullable (System.DateTime.Now.AddHours(12.0)))
+            let finish = new EventDateTime(DateTime = System.Nullable (System.DateTime.Now.AddHours(12.0).AddMinutes(15.0)))
+            let room = new EventAttendee(Email = attendee)
+            let event = new Event(
+                            Start = start,
+                            End = finish,
+                            Summary = "roommate test (event created programmatically)",
+                            Attendees = [|room|]
+                            )
+            let request = calendarService.Events.Insert(event, calendarId)
+            return! request.ExecuteAsync() |> Async.AwaitTask
+        }
         
     let fetchEvents (calendarService:CalendarService) calendarId =
         async {
@@ -104,11 +120,11 @@ module CalendarFetcher =
             return! request.ExecuteAsync() |> Async.AwaitTask
         }
         
-    let printEvents (events:Events) =
-        printfn "\n==== %s %s ====" events.Summary events.Description
+    let logEvents (events:Events) (logFn: string -> unit) =
+        logFn (sprintf "\n==== %s %s ====" events.Summary events.Description)
         
         if events.Items.Count = 0 then
-            printfn "No upcoming events found."
+            logFn "No upcoming events found."
         
         let hoursMinutes (d:DateTime) = sprintf "%2d:%02d" d.TimeOfDay.Hours d.TimeOfDay.Minutes
             
@@ -120,7 +136,7 @@ module CalendarFetcher =
             |> Seq.map (fun e -> e.Start.DateTime |> Option.ofNullable,e.End.DateTime |> Option.ofNullable,e.Summary)
             |> Seq.filter (fun (a,b,_) -> a.IsSome && b.IsSome)
             |> Seq.map (fun (a,b,c) -> a |> someOrBust |> hoursMinutes, b |> someOrBust |> hoursMinutes, c)
-            |> Seq.iter (fun (a,b,c) -> printfn "  %s-%s  %s" a b c)
+            |> Seq.iter (fun (a,b,c) -> logFn (sprintf "  %s-%s  %s" a b c))
             
     let activateWebhook (calendarService:CalendarService) calendarId url =
         async {
@@ -136,3 +152,6 @@ module CalendarFetcher =
         }
         
         
+
+    let printEvents (events:Events) =
+        logEvents events (printfn "%s")
