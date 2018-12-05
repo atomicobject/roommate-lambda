@@ -36,4 +36,4 @@ workflows:
             - build
           filters:
             branches:
-              only: fetch-calendars-from-lambda
+              only: master

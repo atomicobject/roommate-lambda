@@ -48,11 +48,6 @@ type Functions() =
             |> Seq.map (|KeyValue|)
             |> Map.ofSeq
 
-        // let googHeaders = [
-        //     "X-Goog-Resource-State"
-        //     "X-Goog-Resource-ID"
-        //     "X-Goog-Resource-URI"]
-
         let maybeHeaders = request.Headers |> Option.ofObj
         let googHeaders = match maybeHeaders with
                             | None ->
@@ -84,22 +79,6 @@ type Functions() =
                 logEvents events (fun (s:string) -> context.Logger.LogLine(s))
             else
                 context.Logger.LogLine(sprintf "Calendar %s is not in my list!" calId)
-
-
-
-        // let headers = request.Headers |> Option.ofObj |> Option.map (fun headers ->
-        //     |> Seq.map (fun x -> x.Key,x.Value) |> Map.ofSeq
-
-        // ) |> ignore
-        (*
-
-            |> List.map( fun h -> h, headers.tryFind h )
-            let resourceState = headers.TryFind "X-Goog-Resource-State"
-            let resourceId = headers.TryFind "X-Goog-Resource-ID"
-            let resourceUri = headers.TryFind "X-Goog-Resource-URI"
-
-            sprintf "state=%s resource=%s" (resourceState.ToString()) (resourceUri.ToString()) |> context.Logger.LogLine
-        *)
 
         APIGatewayProxyResponse(
             StatusCode = int HttpStatusCode.OK,

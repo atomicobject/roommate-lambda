@@ -95,18 +95,15 @@ module CalendarFetcher =
         
     let createEvent (calendarService:CalendarService) calendarId attendee =
         async {
-            // let event = new Google.Apis.Calendar.v3.EventsResource
             let start = new EventDateTime(DateTime = System.Nullable (System.DateTime.Now.AddHours(12.0)))
             let finish = new EventDateTime(DateTime = System.Nullable (System.DateTime.Now.AddHours(12.0).AddMinutes(15.0)))
-            let event = new Event()
-            event.Start <- start
-            event.End <- finish
-            event.Summary <- "roommate test (event created programmatically)"
-            let room = new EventAttendee()
-            room.Email <- attendee
-            // room.Id <- attendee
-            event.Attendees <- [|room|]
-            // start.DateTime <- System.Nullable System.DateTime.Now
+            let room = new EventAttendee(Email = attendee)
+            let event = new Event(
+                            Start = start,
+                            End = finish,
+                            Summary = "roommate test (event created programmatically)",
+                            Attendees = [|room|]
+                            )
             let request = calendarService.Events.Insert(event, calendarId)
             return! request.ExecuteAsync() |> Async.AwaitTask
         }
