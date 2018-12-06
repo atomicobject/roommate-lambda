@@ -3,40 +3,19 @@ namespace Roommate
 module SecretReader =
     open System
 
-    type MySecretType = string
-    
-    // todo: discriminated union? different secrets for different auth mechanisms?
-    type RoommateSecrets = {
-        googleClientId : string
-        googleClientSecret : string
-        calendarIds : string option
-        accessToken : string
-        refreshToken : string
-        googleTokenJson : string
-    }
-    
-    let secretOrBust s =
-        let envVar = Environment.GetEnvironmentVariable s
-        match envVar with
-        | null -> failwith (sprintf "secret %s not found. (did you set the env var?)" s)
-        | "" -> failwith (sprintf "secret %s not found. (did you set the env var?)" s)
-        | e -> e
+    // let secretOrBust s =
+    //     let envVar = Environment.GetEnvironmentVariable s
+    //     match envVar with
+    //     | null -> failwith (sprintf "secret %s not found. (did you set the env var?)" s)
+    //     | "" -> failwith (sprintf "secret %s not found. (did you set the env var?)" s)
+    //     | e -> e
         
-    let optionalSecret s =
-        let envVar = Environment.GetEnvironmentVariable s
-        match envVar with
-        | null -> None
-        | "" -> None
-        | e -> Some e
+    let readEnvVar = Environment.GetEnvironmentVariable >> Option.ofObj
+    
+    let readSecretOrBust readSecret s =
+        match readSecret s with
+        | None -> failwith (sprintf "secret %s not found. (did you set the env var?)" s)
+        | Some v -> v
         
-    let readSecrets secretName =
-        {
-            googleClientId = secretOrBust "googleClientId"
-            googleClientSecret = secretOrBust "googleClientSecret"
-            calendarIds = optionalSecret "CALENDAR_IDS"
-            accessToken = secretOrBust "googleClientAccessToken"
-            refreshToken = secretOrBust "googleClientRefreshToken"
-            googleTokenJson = secretOrBust "googleTokenJson"
-        }
-            
-                            
+    let readSecretFromEnv = readSecretOrBust readEnvVar
+    

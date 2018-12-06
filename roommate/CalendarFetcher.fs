@@ -21,9 +21,10 @@ module CalendarFetcher =
     open Google.Apis.Util.Store;
     open Google.Apis.Services
 
-        
-    let commonSignIn clientId clientSecret dataStore =
-        let scopes = [CalendarService.Scope.CalendarReadonly]
+    let scopes = [CalendarService.Scope.CalendarReadonly;CalendarService.Scope.CalendarEvents]
+    let humanSignIn clientId clientSecret =
+        // printfn "Performing initial sign-in with clientId and clientSecret"
+        let dataStore = new FileDataStore("google-filedatastore", true)
         
         async {
             let! credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
@@ -37,23 +38,9 @@ module CalendarFetcher =
             let service = new CalendarService(bar)
             return service
         }
-        
-    let accessTokenSignIn clientId clientSecret tokenResponseJson =
-        printfn "Performing resumption sign-in with TokenResponse object"
-        let deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<Responses.TokenResponse>(tokenResponseJson)
-        let dataStore = (new WrappedDataStore.LoggingDataStore())
-        (dataStore.store :> IDataStore).StoreAsync("user",deserialized) |> Async.AwaitTask |> Async.RunSynchronously
-        commonSignIn clientId clientSecret dataStore.store
-            
-    let humanSignIn clientId clientSecret =
-        printfn "Performing initial sign-in with clientId and clientSecret"
-        // let dataStore = new FileDataStore("google-filedatastore", true)
-        let dataStore = (new WrappedDataStore.LoggingDataStore()).store
-        commonSignIn clientId clientSecret dataStore
     
     let serviceAccountSignIn serviceAccountEmail serviceAccountPrivKey serviceAccountAppName =
         // https://gist.github.com/tjmoore/6947d152eb5cfa569ef1
-        let scopes = [CalendarService.Scope.CalendarReadonly;CalendarService.Scope.CalendarEvents]
 
         let init = (new ServiceAccountCredential.Initializer(serviceAccountEmail, Scopes = scopes))
                     .FromPrivateKey(serviceAccountPrivKey)
@@ -65,17 +52,6 @@ module CalendarFetcher =
             return service
         }
 
-    let apiKeySignIn apiKey =
-        let scopes = [CalendarService.Scope.CalendarReadonly]
-        let tempFile = new FileDataStore("google-filedatastore", true)
-        
-        async {
-            let bar = new BaseClientService.Initializer(
-                        ApplicationName = "roommate",
-                        ApiKey = apiKey )
-            let service = new CalendarService(bar)
-            return service
-        }
     let printCalendars (calendarService:CalendarService) =
         async {
             let request = calendarService.CalendarList.List()
@@ -85,8 +61,7 @@ module CalendarFetcher =
             | _ ->
                 printfn "%d results:" (result.Items.Count)
                 let aogr_rooms = result.Items 
-                                    // |> Seq.filter (fun cal -> cal.Summary.Contains("AOGR"))
-                                    // |> Seq.filter (fun cal -> cal.Summary.Contains("Social") |> not)
+                                    |> Seq.filter (fun cal -> cal.Summary.StartsWith("AOGR-"))
                                     
                 aogr_rooms |> Seq.iter (fun item -> printfn "%s,\t%s" item.Id item.Summary)
                 printfn ""
@@ -97,6 +72,7 @@ module CalendarFetcher =
         async {
             let start = new EventDateTime(DateTime = System.Nullable (System.DateTime.Now.AddHours(12.0)))
             let finish = new EventDateTime(DateTime = System.Nullable (System.DateTime.Now.AddHours(12.0).AddMinutes(15.0)))
+            
             let room = new EventAttendee(Email = attendee)
             let event = new Event(
                             Start = start,

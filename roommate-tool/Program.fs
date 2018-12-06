@@ -5,12 +5,11 @@ open Roommate
 open Argu
 open Google.Apis.Http
 open System.Globalization
+open SecretReader
  
 type AuthTypes =
     | ClientIdSecret
-    | ApiKey
     | ServiceAccount
-    | AccessToken
     
 type CLIArguments =
     | Print_Ids
@@ -37,13 +36,6 @@ let main argv =
     
     let results = parser.Parse argv
 
-    let secrets =
-        try
-            SecretReader.readSecrets()
-        with ex ->
-            printfn "%s" ex.Message
-            exit 0
-
     match results.GetAllResults() with
     | [] ->
         printfn "Roommate Tool"
@@ -56,33 +48,31 @@ let main argv =
         
         let calendarService = 
             match authType with
-            | Some ApiKey ->
-                let apiKey = SecretReader.secretOrBust "googleApiKey"
-                CalendarFetcher.apiKeySignIn apiKey |> Async.RunSynchronously
             | Some ServiceAccount ->
-                let serviceAccountEmail = SecretReader.secretOrBust "serviceAccountEmail"
-                let serviceAccountPrivKey = SecretReader.secretOrBust "serviceAccountPrivKey"
-                let serviceAccountAppName = SecretReader.secretOrBust "serviceAccountAppName"
+                let serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
+                let serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
+                let serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
                 CalendarFetcher.serviceAccountSignIn serviceAccountEmail serviceAccountPrivKey serviceAccountAppName |> Async.RunSynchronously
-            | x when x.IsNone || x = (Some ClientIdSecret) ->
-                CalendarFetcher.humanSignIn secrets.googleClientId secrets.googleClientSecret |> Async.RunSynchronously
-            | Some AccessToken ->
-                CalendarFetcher.accessTokenSignIn secrets.googleClientId secrets.googleClientSecret secrets.googleTokenJson |> Async.RunSynchronously
-            | _ -> failwith "oops"
+
+            | Some ClientIdSecret->
+                let googleClientId = readSecretFromEnv "googleClientId"
+                let googleClientSecret = readSecretFromEnv "googleClientSecret"
+                CalendarFetcher.humanSignIn googleClientId googleClientSecret |> Async.RunSynchronously
+                
+            | _ ->  failwith "please specify an --auth type"
 
         if results.Contains Print_Ids then
             CalendarFetcher.printCalendars calendarService |> Async.RunSynchronously
-        if results.Contains Fetch_Calendars then
-            match secrets.calendarIds with
-            | None -> printfn "Please set CALENDAR_IDS environment variable. (fetch IDs with --print_ids)"
-            | Some calendarIds ->
-                let calendarIds = calendarIds.Split(',') |> Seq.ofArray
-                printfn "Fetching calendar events.."
 
-                calendarIds |> Seq.iter (fun calendarId ->
-                    let events = CalendarFetcher.fetchEvents calendarService calendarId |> Async.RunSynchronously
-                    CalendarFetcher.printEvents events
-                )
+        if results.Contains Fetch_Calendars then
+            let calendarIds= readSecretFromEnv "CALENDAR_IDS"
+            let calendarIds = calendarIds.Split(',') |> Seq.ofArray
+            printfn "Fetching calendar events.."
+
+            calendarIds |> Seq.iter (fun calendarId ->
+                let events = CalendarFetcher.fetchEvents calendarService calendarId |> Async.RunSynchronously
+                CalendarFetcher.printEvents events
+            )
         if results.Contains Subscribe_Webhook then
             let calendar,endpoint = results.GetResult Subscribe_Webhook
             

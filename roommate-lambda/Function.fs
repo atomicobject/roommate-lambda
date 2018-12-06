@@ -18,7 +18,7 @@ open Roommate.CalendarFetcher
 type Functions() =
 
     member __.Get (request: APIGatewayProxyRequest) (context: ILambdaContext) =
-        let verificationCode = secretOrBust "GOOGLE_VERIFICATION_CODE"
+        let verificationCode = readSecretFromEnv "GOOGLE_VERIFICATION_CODE"
 
         sprintf "Request: %s" request.Path
         |> context.Logger.LogLine
@@ -58,10 +58,10 @@ type Functions() =
         context.Logger.LogLine("Received push notification! Headers:")
         googHeaders |> Map.toList |> List.iter( fun (k,v) -> context.Logger.LogLine(sprintf "%s : %s" k v))
 
-        let calIdsStr = secretOrBust "CALENDAR_IDS"
-        let serviceAccountEmail = secretOrBust "serviceAccountEmail"
-        let serviceAccountPrivKey = secretOrBust "serviceAccountPrivKey"
-        let serviceAccountAppName = secretOrBust "serviceAccountAppName"
+        let calIdsStr = readSecretFromEnv "CALENDAR_IDS"
+        let serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
+        let serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
+        let serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
 
         let calendarIds = calIdsStr.Split(",")
         match googHeaders.TryFind "X-Goog-Resource-URI" with

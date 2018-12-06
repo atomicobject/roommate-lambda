@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="SecretReaderTest.fs" />
     <Compile Include="WrappedDataStoreTest.fs" />
   </ItemGroup>  
   
