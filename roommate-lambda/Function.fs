@@ -15,7 +15,29 @@ open Roommate.CalendarFetcher
 ()
 
 
+type LambdaConfiguration = {
+    calIds : string
+    serviceAccountEmail:string
+    serviceAccountPrivKey:string
+    serviceAccountAppName:string
+}
+
+
 type Functions() =
+
+    let getGoogHeaders (headers:Collections.Generic.IDictionary<string,string>) =
+        let toMap kvps =
+            kvps
+            |> Seq.map (|KeyValue|)
+            |> Map.ofSeq
+
+        let maybeHeaders = headers |> Option.ofObj |> Option.map toMap
+        match maybeHeaders with
+        | None ->
+            // context.Logger.LogLine "No headers."
+            // [] |> Map.ofList
+            Error  "No headers."
+        | Some h -> h |> Map.filter ( fun k _ -> k.Contains "Goog") |> Ok
 
     member __.Get (request: APIGatewayProxyRequest) (context: ILambdaContext) =
         let verificationCode = readSecretFromEnv "GOOGLE_VERIFICATION_CODE"
@@ -40,45 +62,48 @@ type Functions() =
             Headers = dict [ ("Content-Type", "text/html") ]
         )
 
+
     member __.Post (request: APIGatewayProxyRequest) (context: ILambdaContext) =
         sprintf "Request: %s" request.Path |> context.Logger.LogLine
 
-        let toMap kvps =
-            kvps
-            |> Seq.map (|KeyValue|)
-            |> Map.ofSeq
+        let config : LambdaConfiguration = {
+            calIds = readSecretFromEnv "CALENDAR_IDS"
+            serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
+            serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
+            serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
+        }
 
-        let maybeHeaders = request.Headers |> Option.ofObj
-        let googHeaders = match maybeHeaders with
-                            | None ->
-                                context.Logger.LogLine "No headers."
-                                [] |> Map.ofList
-                            | Some h -> h |> toMap |> Map.filter ( fun k _ -> k.Contains "Goog")
+        let calendarIds = config.calIds.Split(",")
 
-        context.Logger.LogLine("Received push notification! Headers:")
-        googHeaders |> Map.toList |> List.iter( fun (k,v) -> context.Logger.LogLine(sprintf "%s : %s" k v))
+        let logFn = context.Logger.LogLine
 
-        let calIdsStr = readSecretFromEnv "CALENDAR_IDS"
-        let serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
-        let serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
-        let serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
+        request.Headers 
+            |> getGoogHeaders
+            |> Result.map (fun gh ->
+                logFn "Received push notification! Google headers:"
+                gh |> Map.toList |> List.map (fun (k,v) -> sprintf "%s : %s" k v) |> List.iter logFn
+                gh)
+            |> Result.bind (fun gh -> 
+                                match gh.TryFind "X-Goog-Resource-URI" with
+                                | None -> Error "No X-Google-Resource-ID header found."
+                                | Some resourceId -> Ok resourceId)
+            |> Result.bind (fun calURI ->
+                // todo: unit test
+                let calId = calURI.Split("/") |> List.ofArray |> List.find (fun x -> x.Contains "atomicobject.com")
+                if calendarIds |> Array.contains calId then
+                    Ok calId
+                else
+                    calId |> sprintf "Calendar %s is not in my list!" |> Error )
+            |> Result.map (fun calId ->
+                    sprintf "Calendar %s is in my list!" calId |> logFn
+                    let calendarService = serviceAccountSignIn config.serviceAccountEmail config.serviceAccountPrivKey config.serviceAccountAppName |> Async.RunSynchronously
 
-        let calendarIds = calIdsStr.Split(",")
-        match googHeaders.TryFind "X-Goog-Resource-URI" with
-        |None ->
-            context.Logger.LogLine("No X-Google-Resource-ID header found.")
-        |Some calURI ->
-            // todo: unit test
-            let calId = calURI.Split("/") |> List.ofArray |> List.find (fun x -> x.Contains "atomicobject.com")
+                    let events = fetchEvents calendarService calId |> Async.RunSynchronously
+                    logEvents events (fun (s:string) -> context.Logger.LogLine(s)))
+            |> function
+                | Error e -> logFn e
+                | _ -> ()
 
-            if calendarIds |> Array.contains calId then
-                context.Logger.LogLine(sprintf "Calendar %s is in my list!" calId)
-                let calendarService = serviceAccountSignIn serviceAccountEmail serviceAccountPrivKey serviceAccountAppName |> Async.RunSynchronously
-
-                let events = fetchEvents calendarService calId |> Async.RunSynchronously
-                logEvents events (fun (s:string) -> context.Logger.LogLine(s))
-            else
-                context.Logger.LogLine(sprintf "Calendar %s is not in my list!" calId)
 
         APIGatewayProxyResponse(
             StatusCode = int HttpStatusCode.OK,
