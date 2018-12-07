@@ -13,10 +13,11 @@ module CalendarWatcher =
     // todo: unit test
     let calIdFromURI (calURI:string) =
         calURI.Split('/') |> List.ofArray |> List.find (fun x -> x.Contains "atomicobject.com")
-    let processPushNotification (x:Map<string,string>) logFn config =
+    let processPushNotification logFn config (pushNotificationHeaders:Map<string,string>) =
 
         let calendarIds = config.calIds.Split(',')
-        x
+
+        pushNotificationHeaders
         |> (fun h -> h |> Map.filter ( fun k _ -> k.Contains "Goog") |> Ok)
         |> Result.map (fun gh ->
             logFn "Received push notification! Google headers:"

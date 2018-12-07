@@ -1,13 +1,14 @@
 namespace RoommateLambda
 
 
+open System.Net
+
 open Amazon.Lambda.Core
 open Amazon.Lambda.APIGatewayEvents
 
-open System.Net
-
 open Roommate.SecretReader
 open Roommate.CalendarWatcher
+
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [<assembly: LambdaSerializer(typeof<Amazon.Lambda.Serialization.Json.JsonSerializer>)>]
 ()
@@ -62,7 +63,7 @@ type Functions() =
             |> function
                 | None -> Error  "No headers."
                 | Some h -> Ok h
-            |> Result.bind (fun x -> processPushNotification x logFn config)
+            |> Result.bind (processPushNotification logFn config)
             |> function
                 | Error e -> logFn e
                 | _ -> ()
