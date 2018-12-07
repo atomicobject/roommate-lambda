@@ -24,19 +24,19 @@ type CLIArguments =
     | Print_Ids
     | Fetch_Calendars
     | Subscribe_Webhook of calendar:string * endpoint:string
-    | Create_Event of calendarId:string * attendee:string
+    | Create_Event of attendee:string
     | Lookup_CalId of search:string
     
 with
     interface IArgParserTemplate with
         member s.Usage =
             match s with
+            | Auth _ -> "specify authentication mechanism"
             | Print_Ids -> "print available Google calendar IDs"
+            | Lookup_CalId _ -> "lookup calendar ID for name substring"
             | Fetch_Calendars -> "retrieve events from all calendars"
             | Subscribe_Webhook _ -> "subscribe to webhook for calendar x and endpoint y"
-            | Auth _ -> "specify authentication mechanism"
-            | Create_Event _ -> "create event"
-            | Lookup_CalId _ -> "lookup calendar ID for name substring"
+            | Create_Event _ -> "create event on calendar (by name substring)"
             
 
 let CONFIG_FILENAME = "roommate.json"
@@ -109,11 +109,13 @@ let main argv =
             ()
 
         if results.Contains Create_Event then
-            printfn "create event!"
-            let calendarId,attendee= results.GetResult Create_Event
-            let result = (GoogleCalendarClient.createEvent calendarService calendarId attendee |> Async.RunSynchronously)
-            printfn "created event %s" (result.ToString())
-            ()
+            let attendeeNameSubstring = results.GetResult Create_Event
+            // todo: lookup english name of config.myCalendar
+            let roomToInvite = RoommateConfig.looukpCalByName config attendeeNameSubstring
+            printfn "creating event, inviting %s" roomToInvite.name
+            let result = (GoogleCalendarClient.createEvent calendarService config.myCalendar roomToInvite.calendarId |> Async.RunSynchronously)
+            // todo: better summary of event:
+            printfn "created event %s" (Newtonsoft.Json.JsonConvert.SerializeObject(result))
 
         if results.Contains Lookup_CalId then
             results.GetResult Lookup_CalId
