@@ -88,20 +88,21 @@ let main argv =
             let makeRecord (id:string,name:string) : RoommateConfig.MeetingRoom =
                 {calendarId=id;name=name}
 
-            GoogleCalendarClient.fetchCalendarIds calendarService |> Async.RunSynchronously
+            GoogleCalendarClient.fetchCalendarIds calendarService
+            |> Async.RunSynchronously
             |> Seq.map makeRecord // the type from the config file
             |> Seq.toList
             |> RoommateConfig.serializeIndented
             |> printfn "%s"
 
         if results.Contains Fetch_Calendars then
-            let calendarIds= readSecretFromEnv "CALENDAR_IDS"
-            let calendarIds = calendarIds.Split(',') |> Seq.ofArray
+            let calendarIds = config.meetingRooms |> List.map (fun mr -> mr.calendarId)
             printfn "Fetching calendar events.."
 
             calendarIds |> Seq.iter (fun calendarId ->
-                let events = GoogleCalendarClient.fetchEvents calendarService calendarId |> Async.RunSynchronously
-                GoogleCalendarClient.printEvents events
+                GoogleCalendarClient.fetchEvents calendarService calendarId 
+                    |> Async.RunSynchronously
+                    |> GoogleCalendarClient.logEvents (printfn "%s")
             )
         if results.Contains Subscribe_Webhook then
             let calendar,endpoint = results.GetResult Subscribe_Webhook

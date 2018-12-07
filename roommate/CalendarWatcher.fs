@@ -3,8 +3,10 @@ namespace Roommate
 module CalendarWatcher =
 
     open GoogleCalendarClient
+    open Roommate
+    open Roommate.RoommateConfig
     type LambdaConfiguration = {
-        calIds : string
+        roommateConfig : RoommateConfig.RoommateConfig
         serviceAccountEmail:string
         serviceAccountPrivKey:string
         serviceAccountAppName:string
@@ -12,9 +14,9 @@ module CalendarWatcher =
 
     let calIdFromURI (calURI:string) =
         calURI.Split('/') |> List.ofArray |> List.find (fun x -> x.Contains "atomicobject.com")
-    let processPushNotification logFn config (pushNotificationHeaders:Map<string,string>) =
+    let processPushNotification logFn (config:LambdaConfiguration) (pushNotificationHeaders:Map<string,string>) =
 
-        let calendarIds = config.calIds.Split(',')
+        let calendarIds = config.roommateConfig.meetingRooms
 
         // https://developers.google.com/calendar/v3/push
         pushNotificationHeaders
@@ -29,13 +31,11 @@ module CalendarWatcher =
                             | Some resourceId -> Ok resourceId)
         |> Result.map calIdFromURI
         |> Result.bind (fun calId ->
-            if calendarIds |> Array.contains calId then
-                Ok calId
-            else
-                calId |> sprintf "Calendar %s is not in my list!" |> Error )
-        |> Result.map (fun calId ->
-                sprintf "Calendar %s is in my list!" calId |> logFn
+            match RoommateConfig.tryLookupCalById config.roommateConfig calId with
+            | Some room -> Ok room
+            | None -> calId |> sprintf "Calendar %s is not in my list!" |> Error )
+        |> Result.map (fun room ->
+                sprintf "Received push notification for %s" room.name |> logFn
                 let calendarService = serviceAccountSignIn config.serviceAccountEmail config.serviceAccountPrivKey config.serviceAccountAppName |> Async.RunSynchronously
 
-                let events = fetchEvents calendarService calId |> Async.RunSynchronously
-                logEvents events logFn)
+                fetchEvents calendarService room.calendarId |> Async.RunSynchronously |> logEvents logFn)

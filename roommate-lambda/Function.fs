@@ -6,6 +6,8 @@ open System.Net
 open Amazon.Lambda.Core
 open Amazon.Lambda.APIGatewayEvents
 
+open Roommate
+open Roommate.RoommateConfig
 open Roommate.SecretReader
 open Roommate.CalendarWatcher
 
@@ -50,12 +52,11 @@ type Functions() =
         sprintf "Request: %s" request.Path |> context.Logger.LogLine
 
         let config : LambdaConfiguration = {
-            calIds = readSecretFromEnv "CALENDAR_IDS"
+            roommateConfig = readSecretFromEnv "roommateConfig" |> RoommateConfig.deserializeConfig
             serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
             serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
             serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
         }
-
 
         let logFn = context.Logger.LogLine
 

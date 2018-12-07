@@ -39,9 +39,11 @@ module RoommateConfig =
             | Some room -> room
             | None -> failwith (sprintf "no room found matching %s (check your config?)" search)
 
-    let lookupCalById config search =
+    let tryLookupCalById config search =
         config.meetingRooms
         |> List.tryFind (fun room -> room.calendarId = search)
+    let lookupCalById config search =
+        tryLookupCalById config search
         |> function
             | Some room -> room
             | None -> failwith (sprintf "no room found matching %s (check your config?)" search)

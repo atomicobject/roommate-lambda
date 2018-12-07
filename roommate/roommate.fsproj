@@ -3,11 +3,11 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="RoommateConfig.fs" />
+    <Compile Include="SecretReader.fs" />
     <Compile Include="WrappedDataStore.fs" />
     <Compile Include="GoogleCalendarClient.fs" />
     <Compile Include="CalendarWatcher.fs" />
-    <Compile Include="SecretReader.fs" />
-    <Compile Include="RoommateConfig.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Google.Apis.Calendar.v3" Version="1.36.1.1424" />

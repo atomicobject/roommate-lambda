@@ -46,21 +46,6 @@ module GoogleCalendarClient =
                 |> Seq.filter (fun cal -> cal.Summary.Contains("Social") |> not)
                 |> Seq.map (fun item -> item.Id, item.Summary)
         }
-    let printCalendars (calendarService:CalendarService) =
-        async {
-            let request = calendarService.CalendarList.List()
-            let! result = request.ExecuteAsync() |> Async.AwaitTask
-            match result.Items.Count with
-            | 0 -> printfn "0 results!"
-            | _ ->
-                printfn "%d results:" (result.Items.Count)
-                let aogr_rooms = result.Items 
-                                    |> Seq.filter (fun cal -> cal.Summary.StartsWith("AOGR-"))
-                                    
-                aogr_rooms |> Seq.iter (fun item -> printfn "%s,\t%s" item.Id item.Summary)
-                printfn ""
-                printfn "export CALENDAR_IDS=%s" (aogr_rooms |> Seq.map (fun i -> i.Id) |> Seq.reduce (sprintf "%s,%s"))
-        }
         
     let createEvent (calendarService:CalendarService) calendarId attendee =
         async {
@@ -90,7 +75,7 @@ module GoogleCalendarClient =
             return! request.ExecuteAsync() |> Async.AwaitTask
         }
         
-    let logEvents (events:Events) (logFn: string -> unit) =
+    let logEvents (logFn: string -> unit) (events:Events) =
         logFn (sprintf "\n==== %s %s ====" events.Summary events.Description)
         
         if events.Items.Count = 0 then
@@ -121,7 +106,3 @@ module GoogleCalendarClient =
             printfn "watch result: %s" (result.ToString())
         }
         
-        
-
-    let printEvents (events:Events) =
-        logEvents events (printfn "%s")
