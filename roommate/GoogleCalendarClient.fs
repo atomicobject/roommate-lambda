@@ -41,7 +41,15 @@ module GoogleCalendarClient =
         async {
             return service
         }
-
+    let fetchCalendarIds (calendarService:CalendarService) =
+        async {
+            let request = calendarService.CalendarList.List()
+            let! result = request.ExecuteAsync() |> Async.AwaitTask
+            return result.Items 
+                |> Seq.filter (fun cal -> cal.Summary.StartsWith("AO"))
+                |> Seq.filter (fun cal -> cal.Summary.Contains("Social") |> not)
+                |> Seq.map (fun item -> item.Id, item.Summary)
+        }
     let printCalendars (calendarService:CalendarService) =
         async {
             let request = calendarService.CalendarList.List()

@@ -7,6 +7,7 @@ open Google.Apis.Http
 open System.Globalization
 open SecretReader
 open GoogleCalendarClient
+open Roommate.RoommateConfig
 
  
 type AuthTypes =
@@ -30,8 +31,22 @@ with
             | Auth _ -> "specify authentication mechanism"
             | Create_Event _ -> "create event"
             
+
+let CONFIG_FILENAME = "roommate.json"
+
 [<EntryPoint>]
 let main argv =
+
+    if System.IO.File.Exists(CONFIG_FILENAME) |> not then
+        let serialized = RoommateConfig.serializeConfig RoommateConfig.defaultConfig
+        System.IO.File.WriteAllText(CONFIG_FILENAME, serialized)
+        printfn "Please fill out roommate.json"
+        exit(0)
+
+    let json = System.IO.File.ReadAllText(CONFIG_FILENAME)
+    let config = RoommateConfig.deserializeConfig json
+    printfn "read config! myCal=%s" (config.myCalendar)
+
 
     let errorHandler = ProcessExiter()
     let parser = ArgumentParser.Create<CLIArguments>(programName = "dotnet run --", errorHandler = errorHandler, helpTextMessage = "Roommate Tool")
@@ -44,9 +59,7 @@ let main argv =
         printfn "%s" (parser.PrintUsage())
     | _ ->
     
-    
         let authType = results.TryGetResult Auth
-        
         
         let calendarService = 
             match authType with
@@ -64,7 +77,11 @@ let main argv =
             | _ ->  failwith "please specify an --auth type"
 
         if results.Contains Print_Ids then
-            GoogleCalendarClient.printCalendars calendarService |> Async.RunSynchronously
+            GoogleCalendarClient.fetchCalendarIds calendarService |> Async.RunSynchronously
+            |> Seq.map (fun (id,name) -> ({calendarId=id;name=name}))
+            |> Seq.toList
+            |> RoommateConfig.serializeIndented
+            |> printfn "%s"
 
         if results.Contains Fetch_Calendars then
             let calendarIds= readSecretFromEnv "CALENDAR_IDS"
