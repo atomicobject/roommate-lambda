@@ -31,3 +31,23 @@ module RoommateConfig =
          boardAssignments =
              [{boardId = "board ID"
                calendarId = "calendarID board is assigned to"}]}
+
+    let looukpCalByName config search =
+        config.meetingRooms
+        |> List.tryFind (fun room -> room.name.ToLower().Contains search)
+        |> function
+            | Some room -> room
+            | None -> failwith (sprintf "no room found matching %s (check your config?)" search)
+
+    let lookupCalById config search =
+        config.meetingRooms
+        |> List.tryFind (fun room -> room.calendarId = search)
+        |> function
+            | Some room -> room
+            | None -> failwith (sprintf "no room found matching %s (check your config?)" search)
+
+        
+
+
+
+

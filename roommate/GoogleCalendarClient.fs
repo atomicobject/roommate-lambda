@@ -13,20 +13,16 @@ module GoogleCalendarClient =
 
     let scopes = [CalendarService.Scope.CalendarReadonly;CalendarService.Scope.CalendarEvents]
     let humanSignIn clientId clientSecret =
-        // printfn "Performing initial sign-in with clientId and clientSecret"
         let dataStore = new FileDataStore("google-filedatastore", true)
         
         async {
             let! credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
                                 ClientSecrets( ClientId = clientId, ClientSecret = clientSecret),
                                 scopes, "user", CancellationToken.None, dataStore) |> Async.AwaitTask
-            printfn "UserId: %s" credential.UserId
-            // Create the service
-            let bar = new BaseClientService.Initializer(
-                        ApplicationName = "roommate-test",
-                        HttpClientInitializer = credential )
-            let service = new CalendarService(bar)
-            return service
+            return new CalendarService(
+                            new BaseClientService.Initializer(
+                                ApplicationName = "roommate-test",
+                                HttpClientInitializer = credential ) )
         }
     
     let serviceAccountSignIn serviceAccountEmail serviceAccountPrivKey serviceAccountAppName =

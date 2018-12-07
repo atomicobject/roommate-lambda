@@ -8,18 +8,24 @@ open System.Globalization
 open SecretReader
 open GoogleCalendarClient
 open Roommate.RoommateConfig
-
+ 
+ (*
+     todo
+      - infer auth type from env vars
+      - only require auth when the operation needs it
+ *)
  
 type AuthTypes =
     | ClientIdSecret
     | ServiceAccount
     
 type CLIArguments =
+    | Auth of AuthTypes
     | Print_Ids
     | Fetch_Calendars
     | Subscribe_Webhook of calendar:string * endpoint:string
-    | Auth of AuthTypes
     | Create_Event of calendarId:string * attendee:string
+    | Lookup_CalId of search:string
     
 with
     interface IArgParserTemplate with
@@ -30,6 +36,7 @@ with
             | Subscribe_Webhook _ -> "subscribe to webhook for calendar x and endpoint y"
             | Auth _ -> "specify authentication mechanism"
             | Create_Event _ -> "create event"
+            | Lookup_CalId _ -> "lookup calendar ID for name substring"
             
 
 let CONFIG_FILENAME = "roommate.json"
@@ -98,15 +105,20 @@ let main argv =
             )
         if results.Contains Subscribe_Webhook then
             let calendar,endpoint = results.GetResult Subscribe_Webhook
-            
             let result = GoogleCalendarClient.activateWebhook calendarService calendar endpoint |> Async.RunSynchronously
-            
             ()
+
         if results.Contains Create_Event then
             printfn "create event!"
             let calendarId,attendee= results.GetResult Create_Event
             let result = (GoogleCalendarClient.createEvent calendarService calendarId attendee |> Async.RunSynchronously)
             printfn "created event %s" (result.ToString())
+            ()
+
+        if results.Contains Lookup_CalId then
+            results.GetResult Lookup_CalId
+            |> RoommateConfig.looukpCalByName config
+            |> fun cal -> printfn "%s\n%s" cal.name cal.calendarId
             ()
 
     0
