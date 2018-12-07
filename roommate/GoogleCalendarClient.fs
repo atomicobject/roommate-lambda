@@ -1,25 +1,15 @@
 namespace Roommate
 
-open Google.Apis.Auth.OAuth2
-open WrappedDataStore
-open Google.Apis.Util.Store
-open Google.Apis.Calendar.v3
-open Google.Apis.Calendar.v3.Data
-module CalendarFetcher =
+module GoogleCalendarClient =
 
-    open System
-    open System.IO
-    open System.Threading
-    
     open Google.Apis.Auth.OAuth2
     open Google.Apis.Auth.OAuth2.Flows
-    open System
-    open Google.Apis.Auth.OAuth2;
     open Google.Apis.Calendar.v3;
     open Google.Apis.Calendar.v3.Data;
     open Google.Apis.Services;
     open Google.Apis.Util.Store;
-    open Google.Apis.Services
+    open System
+    open System.Threading
 
     let scopes = [CalendarService.Scope.CalendarReadonly;CalendarService.Scope.CalendarEvents]
     let humanSignIn clientId clientSecret =

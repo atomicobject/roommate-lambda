@@ -1,17 +1,14 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="WrappedDataStore.fs" />
-    <Compile Include="CalendarFetcher.fs" />
+    <Compile Include="GoogleCalendarClient.fs" />
+    <Compile Include="CalendarWatcher.fs" />
     <Compile Include="SecretReader.fs" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="Google.Apis.Calendar.v3" Version="1.36.1.1424" />
   </ItemGroup>
-
 </Project>

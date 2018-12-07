@@ -52,17 +52,17 @@ let main argv =
                 let serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
                 let serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
                 let serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
-                CalendarFetcher.serviceAccountSignIn serviceAccountEmail serviceAccountPrivKey serviceAccountAppName |> Async.RunSynchronously
+                GoogleCalendarClient.serviceAccountSignIn serviceAccountEmail serviceAccountPrivKey serviceAccountAppName |> Async.RunSynchronously
 
             | Some ClientIdSecret->
                 let googleClientId = readSecretFromEnv "googleClientId"
                 let googleClientSecret = readSecretFromEnv "googleClientSecret"
-                CalendarFetcher.humanSignIn googleClientId googleClientSecret |> Async.RunSynchronously
+                GoogleCalendarClient.humanSignIn googleClientId googleClientSecret |> Async.RunSynchronously
                 
             | _ ->  failwith "please specify an --auth type"
 
         if results.Contains Print_Ids then
-            CalendarFetcher.printCalendars calendarService |> Async.RunSynchronously
+            GoogleCalendarClient.printCalendars calendarService |> Async.RunSynchronously
 
         if results.Contains Fetch_Calendars then
             let calendarIds= readSecretFromEnv "CALENDAR_IDS"
@@ -70,19 +70,19 @@ let main argv =
             printfn "Fetching calendar events.."
 
             calendarIds |> Seq.iter (fun calendarId ->
-                let events = CalendarFetcher.fetchEvents calendarService calendarId |> Async.RunSynchronously
-                CalendarFetcher.printEvents events
+                let events = GoogleCalendarClient.fetchEvents calendarService calendarId |> Async.RunSynchronously
+                GoogleCalendarClient.printEvents events
             )
         if results.Contains Subscribe_Webhook then
             let calendar,endpoint = results.GetResult Subscribe_Webhook
             
-            let result = CalendarFetcher.activateWebhook calendarService calendar endpoint |> Async.RunSynchronously
+            let result = GoogleCalendarClient.activateWebhook calendarService calendar endpoint |> Async.RunSynchronously
             
             ()
         if results.Contains Create_Event then
             printfn "create event!"
             let calendarId,attendee= results.GetResult Create_Event
-            let result = (CalendarFetcher.createEvent calendarService calendarId attendee |> Async.RunSynchronously)
+            let result = (GoogleCalendarClient.createEvent calendarService calendarId attendee |> Async.RunSynchronously)
             printfn "created event %s" (result.ToString())
             ()
 
