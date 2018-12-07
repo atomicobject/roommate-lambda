@@ -7,8 +7,10 @@
     <Compile Include="GoogleCalendarClient.fs" />
     <Compile Include="CalendarWatcher.fs" />
     <Compile Include="SecretReader.fs" />
+    <Compile Include="RoommateConfig.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Google.Apis.Calendar.v3" Version="1.36.1.1424" />
+    <PackageReference Include="newtonsoft.json" Version="12.0.1" />
   </ItemGroup>
 </Project>

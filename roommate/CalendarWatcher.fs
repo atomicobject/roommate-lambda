@@ -10,7 +10,6 @@ module CalendarWatcher =
         serviceAccountAppName:string
     }
 
-    // todo: unit test
     let calIdFromURI (calURI:string) =
         calURI.Split('/') |> List.ofArray |> List.find (fun x -> x.Contains "atomicobject.com")
     let processPushNotification logFn config (pushNotificationHeaders:Map<string,string>) =

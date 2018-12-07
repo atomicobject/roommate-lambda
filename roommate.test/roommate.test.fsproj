@@ -13,6 +13,7 @@
   <ItemGroup>
     <Compile Include="CalendarWatcherTest.fs" />
     <Compile Include="WrappedDataStoreTest.fs" />
+    <Compile Include="RoommateConfigTest.fs" />
   </ItemGroup>
 
   <ItemGroup>

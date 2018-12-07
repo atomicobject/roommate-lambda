@@ -6,6 +6,8 @@ open Argu
 open Google.Apis.Http
 open System.Globalization
 open SecretReader
+open GoogleCalendarClient
+
  
 type AuthTypes =
     | ClientIdSecret
