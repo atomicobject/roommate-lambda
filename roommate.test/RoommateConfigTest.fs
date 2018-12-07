@@ -7,6 +7,12 @@ open Roommate
 module RoommateConfigTest =
     open Roommate.RoommateConfig
 
+    let exampleJson = """{"myCalendar":"mine","meetingRooms":[{"calendarId":"abc","name":"Ada"}],"boardAssignments":[{"boardId":"12:34","calendarId":"789"}]}"""
+    let squish json =
+        json
+        |> Newtonsoft.Json.JsonConvert.DeserializeObject<RoommateConfig>
+        |> Newtonsoft.Json.JsonConvert.SerializeObject
+
     [<Fact>]
     let ``serializes config``() =
         let config : RoommateConfig.RoommateConfig = {
@@ -16,12 +22,11 @@ module RoommateConfigTest =
         }
 
         let result = RoommateConfig.serializeConfig config
-        result |> should equal """{"myCalendar":"mine","meetingRooms":[{"calendarId":"abc","name":"Ada"}],"boardAssignments":[{"boardId":"12:34","calendarId":"789"}]}"""
+        result |> squish |> should equal exampleJson
 
     [<Fact>]
     let ``deserializes config``() =
-        let json = """{"myCalendar":"mine","meetingRooms":[{"calendarId":"abc","name":"Ada"}],"boardAssignments":[{"boardId":"12:34","calendarId":"789"}]}"""
-        let result = RoommateConfig.deserializeConfig json
+        let result = RoommateConfig.deserializeConfig exampleJson
         let expectation : RoommateConfig.RoommateConfig = {
             boardAssignments = [{boardId="12:34";calendarId="789"}]
             meetingRooms = [{name="Ada";calendarId="abc"}]

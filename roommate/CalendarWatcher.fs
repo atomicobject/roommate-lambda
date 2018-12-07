@@ -16,6 +16,7 @@ module CalendarWatcher =
 
         let calendarIds = config.calIds.Split(',')
 
+        // https://developers.google.com/calendar/v3/push
         pushNotificationHeaders
         |> (fun h -> h |> Map.filter ( fun k _ -> k.Contains "Goog") |> Ok)
         |> Result.map (fun gh ->

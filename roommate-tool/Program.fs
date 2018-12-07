@@ -25,8 +25,8 @@ with
     interface IArgParserTemplate with
         member s.Usage =
             match s with
-            | Print_Ids -> "print Google calendar IDs"
-            | Fetch_Calendars -> "print events from all calendars"
+            | Print_Ids -> "print available Google calendar IDs"
+            | Fetch_Calendars -> "retrieve events from all calendars"
             | Subscribe_Webhook _ -> "subscribe to webhook for calendar x and endpoint y"
             | Auth _ -> "specify authentication mechanism"
             | Create_Event _ -> "create event"
@@ -77,8 +77,12 @@ let main argv =
             | _ ->  failwith "please specify an --auth type"
 
         if results.Contains Print_Ids then
+            printfn "Retrieving meeting rooms (these can be pasted into config file).."
+            let makeRecord (id:string,name:string) : RoommateConfig.MeetingRoom =
+                {calendarId=id;name=name}
+
             GoogleCalendarClient.fetchCalendarIds calendarService |> Async.RunSynchronously
-            |> Seq.map (fun (id,name) -> ({calendarId=id;name=name}))
+            |> Seq.map makeRecord // the type from the config file
             |> Seq.toList
             |> RoommateConfig.serializeIndented
             |> printfn "%s"
