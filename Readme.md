@@ -1,8 +1,10 @@
 # Roommate - Backend
 AO Conference Room IoT Project
 
-## CI
-[![CircleCI](https://circleci.com/gh/atomicobject/roommate-lambda.svg?style=svg)](https://circleci.com/gh/atomicobject/roommate-lambda)
+| Embedded Device | Cloud Backend |
+| --------------- | ------------- |
+| [atomicobject/roommate](https://github.com/atomicobject/roommate) | [atomicobject/roommate-lambda](https://github.com/atomicobject/roommate-lambda) |
+| [![CircleCI](https://circleci.com/gh/atomicobject/roommate.svg?style=svg)](https://circleci.com/gh/atomicobject/roommate) | [![CircleCI](https://circleci.com/gh/atomicobject/roommate-lambda.svg?style=svg)](https://circleci.com/gh/atomicobject/roommate-lambda) |
 
 ## Prerequisites
 
