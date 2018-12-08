@@ -11,9 +11,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="CalendarWatcherTest.fs" />
     <Compile Include="WrappedDataStoreTest.fs" />
-  </ItemGroup>  
-  
+    <Compile Include="RoommateConfigTest.fs" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="fsunit" Version="3.4.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
