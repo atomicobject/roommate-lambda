@@ -8,17 +8,17 @@ open System.Globalization
 open SecretReader
 open GoogleCalendarClient
 open Roommate.RoommateConfig
- 
+
  (*
      todo
       - infer auth type from env vars
       - only require auth when the operation needs it
  *)
- 
+
 type AuthTypes =
     | ClientIdSecret
     | ServiceAccount
-    
+
 type CLIArguments =
     | Auth of AuthTypes
     | Print_Ids
@@ -26,7 +26,7 @@ type CLIArguments =
     | Subscribe_Webhook of calendar:string * endpoint:string
     | Create_Event of attendee:string
     | Lookup_CalId of search:string
-    
+
 with
     interface IArgParserTemplate with
         member s.Usage =
@@ -37,7 +37,7 @@ with
             | Fetch_Calendars -> "retrieve events from all calendars"
             | Subscribe_Webhook _ -> "subscribe to webhook for calendar x and endpoint y"
             | Create_Event _ -> "create event on calendar (by name substring)"
-            
+
 
 let CONFIG_FILENAME = "roommate.json"
 
@@ -52,12 +52,10 @@ let main argv =
 
     let json = System.IO.File.ReadAllText(CONFIG_FILENAME)
     let config = RoommateConfig.deserializeConfig json
-    printfn "read config! myCal=%s" (config.myCalendar)
-
 
     let errorHandler = ProcessExiter()
     let parser = ArgumentParser.Create<CLIArguments>(programName = "dotnet run --", errorHandler = errorHandler, helpTextMessage = "Roommate Tool")
-    
+
     let results = parser.Parse argv
 
     match results.GetAllResults() with
@@ -65,10 +63,10 @@ let main argv =
         printfn "Roommate Tool"
         printfn "%s" (parser.PrintUsage())
     | _ ->
-    
+
         let authType = results.TryGetResult Auth
-        
-        let calendarService = 
+
+        let calendarService =
             match authType with
             | Some ServiceAccount ->
                 let serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
@@ -80,7 +78,7 @@ let main argv =
                 let googleClientId = readSecretFromEnv "googleClientId"
                 let googleClientSecret = readSecretFromEnv "googleClientSecret"
                 GoogleCalendarClient.humanSignIn googleClientId googleClientSecret |> Async.RunSynchronously
-                
+
             | _ ->  failwith "please specify an --auth type"
 
         if results.Contains Print_Ids then
@@ -100,7 +98,7 @@ let main argv =
             printfn "Fetching calendar events.."
 
             calendarIds |> Seq.iter (fun calendarId ->
-                GoogleCalendarClient.fetchEvents calendarService calendarId 
+                GoogleCalendarClient.fetchEvents calendarService calendarId
                     |> Async.RunSynchronously
                     |> GoogleCalendarClient.logEvents (printfn "%s")
             )
@@ -113,10 +111,11 @@ let main argv =
             let attendeeNameSubstring = results.GetResult Create_Event
             // todo: lookup english name of config.myCalendar
             let roomToInvite = RoommateConfig.looukpCalByName config attendeeNameSubstring
-            printfn "creating event, inviting %s" roomToInvite.name
             let result = (GoogleCalendarClient.createEvent calendarService config.myCalendar roomToInvite.calendarId |> Async.RunSynchronously)
-            // todo: better summary of event:
-            printfn "created event %s" (Newtonsoft.Json.JsonConvert.SerializeObject(result))
+
+            printfn "created:"
+            printfn ""
+            printfn "%s" (summarizeEvent result)
 
         if results.Contains Lookup_CalId then
             results.GetResult Lookup_CalId
