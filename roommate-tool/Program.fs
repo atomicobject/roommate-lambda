@@ -62,6 +62,9 @@ let main argv =
     | [] ->
         printfn "Roommate Tool"
         printfn "%s" (parser.PrintUsage())
+        printfn "EXAMPLES"
+        printfn "%s\t        //print all calendar IDs visible to the account" (parser.PrintCommandLineArgumentsFlat [Auth ClientIdSecret; Print_Ids])
+        printfn "%s\t//create an event" (parser.PrintCommandLineArgumentsFlat [Auth ServiceAccount; Create_Event "eniac"])
     | _ ->
 
         let authType = results.TryGetResult Auth
