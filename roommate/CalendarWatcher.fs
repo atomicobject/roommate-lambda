@@ -5,6 +5,7 @@ module CalendarWatcher =
     open GoogleCalendarClient
     open Roommate
     open Roommate.RoommateConfig
+
     type LambdaConfiguration = {
         roommateConfig : RoommateConfig.RoommateConfig
         serviceAccountEmail:string
@@ -14,9 +15,8 @@ module CalendarWatcher =
 
     let calIdFromURI (calURI:string) =
         calURI.Split('/') |> List.ofArray |> List.find (fun x -> x.Contains "atomicobject.com")
-    let processPushNotification logFn (config:LambdaConfiguration) (pushNotificationHeaders:Map<string,string>) =
 
-        let calendarIds = config.roommateConfig.meetingRooms
+    let processPushNotification logFn (config:LambdaConfiguration) (pushNotificationHeaders:Map<string,string>) =
 
         // https://developers.google.com/calendar/v3/push
         pushNotificationHeaders
@@ -25,7 +25,7 @@ module CalendarWatcher =
             logFn "Received push notification! Google headers:"
             gh |> Map.toList |> List.map (fun (k,v) -> sprintf "%s : %s" k v) |> List.iter logFn
             gh)
-        |> Result.bind (fun gh -> 
+        |> Result.bind (fun gh ->
                             match gh.TryFind "X-Goog-Resource-URI" with
                             | None -> Error "No X-Google-Resource-ID header found."
                             | Some resourceId -> Ok resourceId)
