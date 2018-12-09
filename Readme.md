@@ -1,51 +1,40 @@
 # Roommate - Backend
-AO Conference Room IoT Project
 
-| Embedded Device | Cloud Backend |
-| --------------- | ------------- |
-| [atomicobject/roommate](https://github.com/atomicobject/roommate) | [atomicobject/roommate-lambda](https://github.com/atomicobject/roommate-lambda) |
+_Roommate_ is a project to create a conference room gadget that displays availability, takes impromptu reservations, etc.
+
+This repo contains the cloud backend (F#, AWS Lambda) and a command-line tool.
+
+| Embedded Device                                                                                                           | Cloud Backend                                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| [atomicobject/roommate](https://github.com/atomicobject/roommate)                                                         | [atomicobject/roommate-lambda](https://github.com/atomicobject/roommate-lambda)                                                         |
 | [![CircleCI](https://circleci.com/gh/atomicobject/roommate.svg?style=svg)](https://circleci.com/gh/atomicobject/roommate) | [![CircleCI](https://circleci.com/gh/atomicobject/roommate-lambda.svg?style=svg)](https://circleci.com/gh/atomicobject/roommate-lambda) |
 
 ## Prerequisites
 
-- [dotnet core SDK](https://www.microsoft.com/net/download)
+- [.NET Core SDK](https://www.microsoft.com/net/download)
 
-## Secrets
-API keys are needed to talk to Google to read calendar events. We're currently using your user account; in the future we should use a service account not owned by any one person.
+## Build and Run
 
-The secrets we need are called the `clientId` and `clientSecret`.
+- `dotnet build` to build the solution
+- `dotnet test` to run tests.
 
-I neglected to document the detailed process for creating them, but it starts here:
-https://console.cloud.google.com/apis
+## What's What
 
-For now we're keeping secrets in environment variables. I keep an unversioned env.sh that looks like this:
+- **roommate** - business logic
+- **roommate.test** - tests for it
+- **roommate-tool** - CLI tool for testing and miscellaneous functionality
+- **roommate-lambda** - AWS Lambda functions
+- **roommate-lambda.Tests** - tests targeting Lambda functions (currently unused)
+
+## Google Calendar
+
+This project integrates with [Google Calendar](https://developers.google.com/calendar/overview) to view room availability, schedule meetings, etc. To do this locally, you'll need to enable the API on your Google account and grab a pair of credentials. I neglected to document the detailed process for creating them, but it starts here: https://console.cloud.google.com/apis
+
+Put the "Client ID" and "Client Secret" in environment variables so **Roommate-tool** can find them. I keep an unversioned script that looks like this:
 
 ```
 export googleClientId=asdfasdfasdf
 export googleClientSecret=jkljkljkl
 ```
 
-(then you can `source env.sh`)
-
-## Build and Run
-- `dotnet build` to build the solution
-- `dotnet test` from the `roommate-lambda.Tests` directory to run tests.
-
-## Steps taken to create initial project
-
-1. Install the dotnet CLI
-
-    Find installer here: https://www.microsoft.com/net/learn/get-started-with-dotnet-tutorial
-
-2. Install the Amazon templates 
-
-    `dotnet new -i Amazon.Lambda.Templates`
-
-3. Create a new _empty lambda function_ project using the dotnet CLI
-
-    `dotnet new lambda.EmptyFunction -lang F# -o FSharpBasicFunction --region us-west-2 --profile default`
-    
-4. Follow the steps in the tutorial below to enable the Google API
-
-    https://developers.google.com/calendar/quickstart/dotnet
-
+(then you can e.g. `source env.sh`)
