@@ -7,8 +7,6 @@ open Amazon.Lambda.Core
 open Amazon.Lambda.APIGatewayEvents
 
 open Roommate
-open Roommate.RoommateConfig
-open Roommate.SecretReader
 open Roommate.CalendarWatcher
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
@@ -24,13 +22,16 @@ type Functions() =
         |> Seq.map (|KeyValue|)
         |> Map.ofSeq
 
+    abstract member ReadSecret : string -> string
+    default u.ReadSecret (s:string) = SecretReader.readSecretFromEnv s
+
     member __.Get (request: APIGatewayProxyRequest) (context: ILambdaContext) =
-        let verificationCode = readSecretFromEnv "GOOGLE_VERIFICATION_CODE"
+        let verificationCode = __.ReadSecret "GOOGLE_VERIFICATION_CODE"
 
         sprintf "Request: %s" request.Path
         |> context.Logger.LogLine
 
-        let htmlBody = sprintf 
+        let htmlBody = sprintf
                         """
                         <html>
                           <head>
@@ -52,10 +53,10 @@ type Functions() =
         sprintf "Request: %s" request.Path |> context.Logger.LogLine
 
         let config : LambdaConfiguration = {
-            roommateConfig = readSecretFromEnv "roommateConfig" |> RoommateConfig.deserializeConfig
-            serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
-            serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
-            serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
+            roommateConfig = __.ReadSecret "roommateConfig" |> RoommateConfig.deserializeConfig
+            serviceAccountEmail = __.ReadSecret "serviceAccountEmail"
+            serviceAccountPrivKey = __.ReadSecret "serviceAccountPrivKey"
+            serviceAccountAppName = __.ReadSecret "serviceAccountAppName"
         }
 
         let logFn = context.Logger.LogLine

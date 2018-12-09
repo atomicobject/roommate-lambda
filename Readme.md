@@ -26,7 +26,7 @@ This repo contains the cloud backend (F#, AWS Lambda) and a command-line tool.
 - **roommate-lambda** - AWS Lambda functions
 - **roommate-lambda.Tests** - tests targeting Lambda functions (currently unused)
 
-## Google Calendar
+## Google API Authentication
 
 This project integrates with [Google Calendar](https://developers.google.com/calendar/overview) to view room availability, schedule meetings, etc. To do this locally, you'll need to enable the API on your Google account and grab a pair of credentials. I neglected to document the detailed process for creating them, but it starts here: https://console.cloud.google.com/apis
 
@@ -38,3 +38,5 @@ export googleClientSecret=jkljkljkl
 ```
 
 (then you can e.g. `source env.sh`)
+
+Note that this auth flow is just for developer use; the deployed system uses a [service account](https://developers.google.com/identity/protocols/OAuth2#serviceaccount) instead, with a different kind of credentials.
