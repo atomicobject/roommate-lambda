@@ -6,7 +6,7 @@ jobs:
     steps:
       - checkout
       - run: dotnet --version && dotnet build
-      - run: dotnet test roommate.test/roommate.test.fsproj --logger:"xunit;LogFilePath=../test-results/roommate.test.xml"
+      - run: dotnet test roommate.test/roommate.test.fsproj --logger:"xunit;LogFilePath=../test-results/roommate.test/roommate.test.xml"
       # - run: dotnet test --test-adapter-path:. --logger:xunit
 
       - store_test_results:
