@@ -1,8 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AwsIotClient.fs" />
     <Compile Include="RoommateConfig.fs" />
     <Compile Include="SecretReader.fs" />
     <Compile Include="WrappedDataStore.fs" />
@@ -10,7 +11,8 @@
     <Compile Include="CalendarWatcher.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Google.Apis.Calendar.v3" Version="1.36.1.1424" />
+    <PackageReference Include="AWSSDK.IotData" Version="3.3.0.64" />
+    <PackageReference Include="Google.Apis.Calendar.v3" Version="1.36.1.1433" />
     <PackageReference Include="newtonsoft.json" Version="12.0.1" />
   </ItemGroup>
 </Project>

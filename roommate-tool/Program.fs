@@ -8,6 +8,7 @@ open System.Globalization
 open SecretReader
 open GoogleCalendarClient
 open Roommate.RoommateConfig
+open roommate
 
  (*
      todo
@@ -26,6 +27,7 @@ type CLIArguments =
     | Subscribe_Webhook of calendar:string * endpoint:string
     | Create_Event of attendee:string
     | Lookup_CalId of search:string
+    | Mqtt_Publish of topic:string * message:string
 
 with
     interface IArgParserTemplate with
@@ -37,6 +39,7 @@ with
             | Fetch_Calendars -> "retrieve events from all calendars"
             | Subscribe_Webhook _ -> "subscribe to webhook for calendar x and endpoint y"
             | Create_Event _ -> "create event on calendar (by name substring)"
+            | Mqtt_Publish _ -> "publish message to MQTT topic"
 
 
 let CONFIG_FILENAME = "roommate.json"
@@ -70,6 +73,13 @@ let main argv =
         printfn "Authentication uses environment variables googleClientId/googleClientSecret or"
         printfn "serviceAccountEmail/serviceAccountAppName/serviceAccountPrivKey"
     | _ ->
+        if results.Contains Mqtt_Publish then
+            let mqttEndpoint = readSecretFromEnv "mqttEndpoint"
+            let topic,message = results.GetResult Mqtt_Publish
+            AwsIotClient.publish mqttEndpoint topic message
+            Environment.Exit 0
+
+
 
         let authType = results.TryGetResult Auth
 
