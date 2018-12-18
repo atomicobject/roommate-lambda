@@ -63,7 +63,7 @@ module CalendarWatcher =
                         | None -> "(n/a)"
 
     let mapEventsToMessage (calendarId,events:Google.Apis.Calendar.v3.Data.Events) =
-        // todo: implement (and unit test):
+        // todo: unit test
         let msg : Messages.CalendarUpdate = {
             time = (DateTime.UtcNow.ToString())
             // todo: handle all-day events?
