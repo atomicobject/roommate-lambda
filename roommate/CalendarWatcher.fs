@@ -2,6 +2,7 @@ namespace Roommate
 
 module CalendarWatcher =
 
+    open Google.Apis.Calendar.v3.Data
     open System
     open GoogleCalendarClient
     open Roommate
@@ -52,13 +53,18 @@ module CalendarWatcher =
                 room.calendarId,events
                 )
 
+    let dateTimeString (ndt:EventDateTime) =
+        ndt.DateTime |> Option.ofNullable |> function
+                                                | Some dt -> dt.ToString()
+                                                | None -> "(n/a)"
+                                                
     let mapEventsToMessage (calendarId,events:Google.Apis.Calendar.v3.Data.Events) =
         // todo: implement (and unit test):
         let msg : Messages.CalendarUpdate = {
             time = (DateTime.UtcNow.ToString())
             // todo: handle all-day events?
             events = events.Items
-                         |> Seq.map(fun e -> ({s=e.Start.ToString();e=e.End.ToString()}:Messages.CalendarEvent))
+                         |> Seq.map(fun e -> ({s=dateTimeString e.Start;e=dateTimeString e.End}:Messages.CalendarEvent))
                          |> List.ofSeq
         }
         Ok (calendarId,msg)
