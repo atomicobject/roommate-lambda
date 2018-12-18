@@ -24,6 +24,7 @@ Resources:
     Type: AWS::IoT::Policy
     Properties:
       PolicyDocument:
+        Version: "2012-10-17"
         Effect: Allow
         Action:
           - "iot::Connect"
