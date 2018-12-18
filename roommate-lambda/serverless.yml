@@ -47,7 +47,17 @@ Resources:
       Role: null
       Policies:
         - AWSLambdaBasicExecutionRole
-        - !Ref IotPublishPolicy
+        -
+          Version: "2012-10-17"
+          Statement:
+            -
+              Effect: "Allow"
+              Action:
+                - "iot:Connect"
+                - "iot:Publish"
+              Resource:
+                - "arn:aws:iot:*:*:topic/*"
+                - "arn:aws:iot:*:*:client/*"
       Events:
         PutResource:
           Type: "Api"
@@ -66,7 +76,17 @@ Resources:
       Role: null
       Policies:
         - AWSLambdaBasicExecutionRole
-        - !Ref IotPublishPolicy
+        -
+          Version: "2012-10-17"
+          Statement:
+            -
+              Effect: "Allow"
+              Action:
+                - "iot:Connect"
+                - "iot:Publish"
+              Resource:
+                - "arn:aws:iot:*:*:topic/*"
+                - "arn:aws:iot:*:*:client/*"
       Events:
         UpdateRequest:
           Type: IoTRule
