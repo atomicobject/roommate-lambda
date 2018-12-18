@@ -29,7 +29,7 @@ Resources:
       MemorySize: 256
       Timeout: 30
       Role: null
-      Policies: ["AWSLambdaBasicExecutionRole"]
+      Policies: ["AWSLambdaBasicExecutionRole","roommate-publish-topic"]
       Events:
         PutResource:
           Type: "Api"
@@ -46,7 +46,7 @@ Resources:
       MemorySize: 256
       Timeout: 30
       Role: null
-      Policies: ["AWSLambdaBasicExecutionRole"]
+      Policies: ["AWSLambdaBasicExecutionRole","roommate-publish-topic"]
       Events:
         UpdateRequest:
           Type: IoTRule
