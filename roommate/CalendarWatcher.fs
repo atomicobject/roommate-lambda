@@ -2,7 +2,6 @@ namespace Roommate
 
 module CalendarWatcher =
 
-    open Google.Apis.Calendar.v3.Data
     open System
     open GoogleCalendarClient
     open Roommate
@@ -53,11 +52,11 @@ module CalendarWatcher =
                 room.calendarId,events
                 )
 
-    let dateTimeString (ndt:EventDateTime) =
+    let dateTimeString (ndt:Google.Apis.Calendar.v3.Data.EventDateTime) =
         ndt.DateTime |> Option.ofNullable |> function
                                                 | Some dt -> dt.ToString()
                                                 | None -> "(n/a)"
-                                                
+
     let mapEventsToMessage (calendarId,events:Google.Apis.Calendar.v3.Data.Events) =
         // todo: implement (and unit test):
         let msg : Messages.CalendarUpdate = {
