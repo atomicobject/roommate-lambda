@@ -37,7 +37,7 @@ Resources:
             Path: "/"
             Method: "POST"
 
-  DeviceConnect:
+  UpdateRequest:
     Type: "AWS::Serverless::Function"
     Properties:
       Handler: "roommate-lambda::RoommateLambda.Functions::UpdateRequest"
