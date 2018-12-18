@@ -20,22 +20,6 @@ Resources:
             Path: "/"
             Method: "GET"
 
-  IotPublishPolicy:
-    Type: AWS::IoT::Policy
-    Properties:
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          -
-            Effect: "Allow"
-            Action:
-              - "iot:Connect"
-              - "iot:Publish"
-            Resource:
-              - "arn:aws:iot:*:*:topic/*"
-              - "arn:aws:iot:*:*:client/*"
-      PolicyName: "IotPublishPolicy"
-
   Post:
     Type: "AWS::Serverless::Function"
     Properties:

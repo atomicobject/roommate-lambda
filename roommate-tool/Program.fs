@@ -76,7 +76,10 @@ let main argv =
         if results.Contains Mqtt_Publish then
             let mqttEndpoint = readSecretFromEnv "mqttEndpoint"
             let topic,message = results.GetResult Mqtt_Publish
-            AwsIotClient.publish mqttEndpoint topic message
+            let portalUrl = "https://console.aws.amazon.com/iot/home?region=us-east-1#/test"
+            printfn "You can also pub/sub from the aws portal at:\n%s" portalUrl
+            let result = AwsIotClient.publish mqttEndpoint topic message
+            printfn "%s" (result.HttpStatusCode.ToString())
             Environment.Exit 0
 
 

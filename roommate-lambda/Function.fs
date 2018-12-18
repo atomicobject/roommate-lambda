@@ -1,16 +1,13 @@
 namespace RoommateLambda
 
-
 open System.Net
 
 open Amazon.Lambda.Core
 open Amazon.Lambda.APIGatewayEvents
 
 open Roommate
-open Roommate.RoommateConfig
 open Roommate.SecretReader
 open Roommate.CalendarWatcher
-open roommate
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [<assembly: LambdaSerializer(typeof<Amazon.Lambda.Serialization.Json.JsonSerializer>)>]
@@ -83,7 +80,7 @@ type Functions() =
         )
 
     member __.UpdateRequest (request: Messages.UpdateRequest) (context: ILambdaContext) =
-        sprintf "Updated requested for boardId %s" (request.ToString()) |> context.Logger.LogLine
+        sprintf "Updated requested for boardId %s" (request.boardId) |> context.Logger.LogLine
 
         let config : LambdaConfiguration = {
             roommateConfig = readSecretFromEnv "roommateConfig" |> RoommateConfig.deserializeConfig
