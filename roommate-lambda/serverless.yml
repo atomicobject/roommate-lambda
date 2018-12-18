@@ -25,13 +25,15 @@ Resources:
     Properties:
       PolicyDocument:
         Version: "2012-10-17"
-        Effect: Allow
-        Action:
-          - "iot::Connect"
-          - "iot::Publish"
-        Resource:
-          - "arn:aws:iot:*:*:topic/*"
-          - "arn:aws:iot:*:*:client/*"
+        Statement:
+          -
+            Effect: Allow
+            Action:
+              - "iot::Connect"
+              - "iot::Publish"
+            Resource:
+              - "arn:aws:iot:*:*:topic/*"
+              - "arn:aws:iot:*:*:client/*"
       PolicyName: "IotPublishPolicy"
 
   Post:
