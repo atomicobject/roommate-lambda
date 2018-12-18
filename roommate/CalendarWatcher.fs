@@ -70,11 +70,13 @@ module CalendarWatcher =
                             |> List.map (fun boardId -> sprintf "calendar-updates/for-board/%s" boardId)
         let calendarTopic = sprintf "calendar-updates/for-calendar/%s" calendarId
         let topics = calendarTopic::boardTopics
+        logFn (sprintf "publishing to topics %s" (topics.ToString()))
         Ok (topics,msg)
 
-    let sendMessageToTopics endpoint (topics:string list, message:Messages.CalendarUpdate) =
+    let sendMessageToTopics (logFn:string->unit) (endpoint:string) (topics:string list, message:Messages.CalendarUpdate) =
         let json = (message |> Newtonsoft.Json.JsonConvert.SerializeObject)
         topics |> List.iter (fun topic ->
+            logFn (sprintf "publishint to %s |%s|" topic json)
             AwsIotClient.publish endpoint topic json
         )
         // todo: collect, log results

@@ -70,7 +70,7 @@ type Functions() =
             |> Result.bind (processCalendarId logFn config)
             |> Result.bind (mapEventsToMessage)
             |> Result.bind (determineTopicsToPublishTo logFn config)
-            |> Result.bind (sendMessageToTopics config.mqttEndpoint)
+            |> Result.bind (sendMessageToTopics logFn config.mqttEndpoint)
             |> function
                 | Error e -> logFn e
                 | _ -> ()
@@ -83,7 +83,7 @@ type Functions() =
         )
 
     member __.UpdateRequest (request: Messages.UpdateRequest) (context: ILambdaContext) =
-        sprintf "Update plz? %s" (request.ToString()) |> context.Logger.LogLine
+        sprintf "Updated requested for boardId %s" (request.ToString()) |> context.Logger.LogLine
 
         let config : LambdaConfiguration = {
             roommateConfig = readSecretFromEnv "roommateConfig" |> RoommateConfig.deserializeConfig
@@ -102,7 +102,7 @@ type Functions() =
                         |> Result.bind (processCalendarId logFn config)
                         |> Result.bind (mapEventsToMessage)
                         |> Result.bind (determineTopicsToPublishTo logFn config)
-                        |> Result.bind (sendMessageToTopics config.mqttEndpoint)
+                        |> Result.bind (sendMessageToTopics logFn config.mqttEndpoint)
                         |> function
                             | Error e -> logFn e
                             | _ -> ()
