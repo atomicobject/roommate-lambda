@@ -1,13 +1,11 @@
 namespace RoommateLambda
 
-
 open System.Net
 
 open Amazon.Lambda.Core
 open Amazon.Lambda.APIGatewayEvents
 
 open Roommate
-open Roommate.RoommateConfig
 open Roommate.SecretReader
 open Roommate.CalendarWatcher
 
@@ -30,7 +28,7 @@ type Functions() =
         sprintf "Request: %s" request.Path
         |> context.Logger.LogLine
 
-        let htmlBody = sprintf 
+        let htmlBody = sprintf
                         """
                         <html>
                           <head>
@@ -56,6 +54,7 @@ type Functions() =
             serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
             serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
             serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
+            mqttEndpoint = readSecretFromEnv "mqttEndpoint"
         }
 
         let logFn = context.Logger.LogLine
@@ -64,7 +63,11 @@ type Functions() =
             |> function
                 | None -> Error  "No headers."
                 | Some h -> Ok h
-            |> Result.bind (processPushNotification logFn config)
+            |> Result.bind (calendarIdFromPushNotification logFn config)
+            |> Result.bind (processCalendarId logFn config)
+            |> Result.bind (mapEventsToMessage)
+            |> Result.bind (determineTopicsToPublishTo logFn config)
+            |> Result.bind (sendMessageToTopics logFn config.mqttEndpoint)
             |> function
                 | Error e -> logFn e
                 | _ -> ()
@@ -75,3 +78,29 @@ type Functions() =
             Body = "Hello AWS Serverless (POST)",
             Headers = dict [ ("Content-Type", "text/plain") ]
         )
+
+    member __.UpdateRequest (request: Messages.UpdateRequest) (context: ILambdaContext) =
+        sprintf "Updated requested for boardId %s" (request.boardId) |> context.Logger.LogLine
+
+        let config : LambdaConfiguration = {
+            roommateConfig = readSecretFromEnv "roommateConfig" |> RoommateConfig.deserializeConfig
+            serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
+            serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
+            serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
+            mqttEndpoint = readSecretFromEnv "mqttEndpoint"
+        }
+
+        let logFn = context.Logger.LogLine
+
+        request.boardId |> lookupCalendarForBoard config
+                        |> function
+                            | None -> Error  "Unknown board"
+                            | Some calId -> Ok calId
+                        |> Result.bind (processCalendarId logFn config)
+                        |> Result.bind (mapEventsToMessage)
+                        |> Result.bind (determineTopicsToPublishTo logFn config)
+                        |> Result.bind (sendMessageToTopics logFn config.mqttEndpoint)
+                        |> function
+                            | Error e -> logFn e
+                            | _ -> ()
+        ()

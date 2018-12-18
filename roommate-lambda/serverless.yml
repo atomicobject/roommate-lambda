@@ -29,13 +29,54 @@ Resources:
       MemorySize: 256
       Timeout: 30
       Role: null
-      Policies: ["AWSLambdaBasicExecutionRole"]
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        -
+          Version: "2012-10-17"
+          Statement:
+            -
+              Effect: "Allow"
+              Action:
+                - "iot:Connect"
+                - "iot:Publish"
+              Resource:
+                - "arn:aws:iot:*:*:topic/*"
+                - "arn:aws:iot:*:*:client/*"
       Events:
         PutResource:
           Type: "Api"
           Properties:
             Path: "/"
             Method: "POST"
+
+  UpdateRequest:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      Handler: "roommate-lambda::RoommateLambda.Functions::UpdateRequest"
+      Runtime: "dotnetcore2.1"
+      CodeUri: ""
+      MemorySize: 256
+      Timeout: 30
+      Role: null
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        -
+          Version: "2012-10-17"
+          Statement:
+            -
+              Effect: "Allow"
+              Action:
+                - "iot:Connect"
+                - "iot:Publish"
+              Resource:
+                - "arn:aws:iot:*:*:topic/*"
+                - "arn:aws:iot:*:*:client/*"
+      Events:
+        UpdateRequest:
+          Type: IoTRule
+          Properties:
+            Sql: "SELECT * FROM 'update-request'"
+
 
 Outputs:
   ApiURL:
