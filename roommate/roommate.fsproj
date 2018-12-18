@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AwsIotClient.fs" />
+    <Compile Include="Messages.fs" />
     <Compile Include="RoommateConfig.fs" />
     <Compile Include="SecretReader.fs" />
     <Compile Include="WrappedDataStore.fs" />
@@ -12,7 +13,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AWSSDK.IotData" Version="3.3.0.64" />
-    <PackageReference Include="Google.Apis.Calendar.v3" Version="1.36.1.1433" />
+    <PackageReference Include="Google.Apis.Calendar.v3" Version="1.36.1.1440" />
     <PackageReference Include="newtonsoft.json" Version="12.0.1" />
   </ItemGroup>
 </Project>

@@ -40,7 +40,7 @@ Resources:
   DeviceConnect:
     Type: "AWS::Serverless::Function"
     Properties:
-      Handler: "roommate-lambda::RoommateLambda.Functions::DeviceConnect"
+      Handler: "roommate-lambda::RoommateLambda.Functions::UpdateRequest"
       Runtime: "dotnetcore2.1"
       CodeUri: ""
       MemorySize: 256
@@ -51,7 +51,7 @@ Resources:
         DeviceConnect:
           Type: IoTRule
           Properties:
-            Sql: "SELECT * FROM 'test-topic'"
+            Sql: "SELECT * FROM 'update-request'"
 
 Outputs:
   ApiURL:
