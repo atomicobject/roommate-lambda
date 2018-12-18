@@ -48,7 +48,7 @@ Resources:
       Role: null
       Policies: ["AWSLambdaBasicExecutionRole"]
       Events:
-        DeviceConnect:
+        UpdateRequest:
           Type: IoTRule
           Properties:
             Sql: "SELECT * FROM 'update-request'"

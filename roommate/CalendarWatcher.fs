@@ -42,7 +42,7 @@ module CalendarWatcher =
             | Some room -> Ok room
             | None -> calId |> sprintf "Calendar %s is not in my list!" |> Error )
         |> Result.map (fun room ->
-                sprintf "Received push notification for %s" room.name |> logFn
+                sprintf "Calendar ID %s" room.name |> logFn
                 let calendarService = serviceAccountSignIn config.serviceAccountEmail config.serviceAccountPrivKey config.serviceAccountAppName |> Async.RunSynchronously
 
                 let events = fetchEvents calendarService room.calendarId |> Async.RunSynchronously
