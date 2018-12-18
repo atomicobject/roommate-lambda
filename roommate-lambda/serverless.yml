@@ -20,6 +20,15 @@ Resources:
             Path: "/"
             Method: "GET"
 
+  IotPublishPolicy:
+    Type: AWS::IoT::Policy
+    Properties:
+      PolicyDocument:
+        Effect: Allow
+          Action: ["iot::Connect","iot::Publish"]
+          Resource: ["arn:aws:iot:*:*:topic/*", "arn:aws:iot:*:*:client/*"]
+      PolicyName: String
+
   Post:
     Type: "AWS::Serverless::Function"
     Properties:
@@ -29,7 +38,9 @@ Resources:
       MemorySize: 256
       Timeout: 30
       Role: null
-      Policies: ["AWSLambdaBasicExecutionRole","roommate-publish-topic"]
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Ref: "IotPublishPolicy"
       Events:
         PutResource:
           Type: "Api"
@@ -46,12 +57,15 @@ Resources:
       MemorySize: 256
       Timeout: 30
       Role: null
-      Policies: ["AWSLambdaBasicExecutionRole","roommate-publish-topic"]
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Ref: "IotPublishPolicy"
       Events:
         UpdateRequest:
           Type: IoTRule
           Properties:
             Sql: "SELECT * FROM 'update-request'"
+
 
 Outputs:
   ApiURL:
