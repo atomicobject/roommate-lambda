@@ -30,7 +30,7 @@ type Functions() =
         sprintf "Request: %s" request.Path
         |> context.Logger.LogLine
 
-        let htmlBody = sprintf 
+        let htmlBody = sprintf
                         """
                         <html>
                           <head>
@@ -75,3 +75,7 @@ type Functions() =
             Body = "Hello AWS Serverless (POST)",
             Headers = dict [ ("Content-Type", "text/plain") ]
         )
+
+    member __.DeviceConnect (request: string) (context: ILambdaContext) =
+        sprintf "DeviceConnect? %s" request |> context.Logger.LogLine
+        ()

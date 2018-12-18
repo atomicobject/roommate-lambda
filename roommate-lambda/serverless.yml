@@ -37,6 +37,22 @@ Resources:
             Path: "/"
             Method: "POST"
 
+  DeviceConnect:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      Handler: "roommate-lambda::RoommateLambda.Functions::DeviceConnect"
+      Runtime: "dotnetcore2.1"
+      CodeUri: ""
+      MemorySize: 256
+      Timeout: 30
+      Role: null
+      Policies: ["AWSLambdaBasicExecutionRole"]
+      Events:
+        DeviceConnect:
+          Type: IoTRule
+          Properties:
+            Sql: "SELECT * FROM 'test-topic'"
+
 Outputs:
   ApiURL:
     Description: "API endpoint URL for Prod environment"

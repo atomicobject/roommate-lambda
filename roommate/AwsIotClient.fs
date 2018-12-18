@@ -10,7 +10,7 @@ module roommate.AwsIotClient
 
         printfn "You can also pub/sub from the aws portal at:\n%s" portalUrl
         printfn ""
-        
+
         let client = new AmazonIotDataClient("https://" + endpoint)
         let req = new Model.PublishRequest(
                                 Topic = topic,
