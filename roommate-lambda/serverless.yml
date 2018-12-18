@@ -27,10 +27,10 @@ Resources:
         Version: "2012-10-17"
         Statement:
           -
-            Effect: Allow
+            Effect: "Allow"
             Action:
-              - "iot::Connect"
-              - "iot::Publish"
+              - "iot:Connect"
+              - "iot:Publish"
             Resource:
               - "arn:aws:iot:*:*:topic/*"
               - "arn:aws:iot:*:*:client/*"
