@@ -92,7 +92,7 @@ type Functions() =
 
         let logFn = context.Logger.LogLine
 
-        request.boardId |> lookupCalendarForBoard config
+        request.boardId |> RoommateConfig.lookupCalendarForBoard config.roommateConfig
                         |> function
                             | None -> Error  "Unknown board"
                             | Some calId -> Ok calId

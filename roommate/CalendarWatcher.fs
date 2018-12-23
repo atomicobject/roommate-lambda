@@ -16,9 +16,6 @@ module CalendarWatcher =
         mqttEndpoint: string
     }
 
-    let calIdFromURI (calURI:string) =
-        calURI.Split('/') |> List.ofArray |> List.find (fun x -> x.Contains "atomicobject.com")
-
     let calendarIdFromPushNotification logFn (config:LambdaConfiguration) (pushNotificationHeaders:Map<string,string>) =
 
         let calendarIds = config.roommateConfig.meetingRooms
@@ -93,7 +90,3 @@ module CalendarWatcher =
         )
         Ok ""
 
-    let lookupCalendarForBoard (config:LambdaConfiguration) boardId =
-        config.roommateConfig.boardAssignments
-            |> List.tryFind (fun ba -> ba.boardId = boardId)
-            |> Option.map (fun ba -> ba.calendarId)

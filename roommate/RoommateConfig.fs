@@ -42,13 +42,25 @@ module RoommateConfig =
     let tryLookupCalById config search =
         config.meetingRooms
         |> List.tryFind (fun room -> room.calendarId = search)
+
     let lookupCalById config search =
         tryLookupCalById config search
         |> function
             | Some room -> room
             | None -> failwith (sprintf "no room found matching %s (check your config?)" search)
 
-        
+    let lookupCalendarForBoard config boardId =
+        config.boardAssignments
+            |> List.tryFind (fun ba -> ba.boardId = boardId)
+            |> Option.map (fun ba -> ba.calendarId)
+
+    let calIdFromURI (calURI:string) =
+        calURI.Split('/') |> List.ofArray |> List.find (fun x -> x.Contains "@")
+
+    let shortName (calName:string) =
+        calName.Split('(') |> List.ofArray |> List.head |> (fun s -> s.Trim())
+
+
 
 
 

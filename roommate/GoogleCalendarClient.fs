@@ -37,6 +37,7 @@ module GoogleCalendarClient =
         async {
             return service
         }
+
     let fetchCalendarIds (calendarService:CalendarService) =
         async {
             let request = calendarService.CalendarList.List()
@@ -98,14 +99,19 @@ module GoogleCalendarClient =
         async {
             let guid = Guid.NewGuid().ToString()
             // https://developers.google.com/calendar/v3/push#making-watch-requests
+            // different ID. calendar id?
+            // want to be able to cancel-all without grepping logs
             let channel = new Channel(Address = url, Type = "web_hook",Id = guid)
 
             let request = calendarService.Events.Watch(channel,calendarId)
 
             // Execute the request
-            let! result =request.ExecuteAsync() |> Async.AwaitTask
+            let! result = request.ExecuteAsync() |> Async.AwaitTask
             printfn "watch result: %s" (result.ToString())
         }
+
+    let cancelWebhook (calendarService:CalendarService) calendarId url =
+        ()
 
     let summarizeEvent (event:Event) =
         sprintf "%s\n" event.Summary +
