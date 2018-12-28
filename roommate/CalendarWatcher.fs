@@ -52,20 +52,20 @@ module CalendarWatcher =
                 room.calendarId,events
                 )
 
-    let iso8601date (dt:DateTime) =
+    let iso8601datez (dt:DateTime) =
         // https://stackoverflow.com/a/115034
-        dt.ToString("s", System.Globalization.CultureInfo.InvariantCulture)
+        dt.ToString("s", System.Globalization.CultureInfo.InvariantCulture) + "z"
 
     let maybeDateTimeString (ndt:Google.Apis.Calendar.v3.Data.EventDateTime) =
         ndt.DateTime |> Option.ofNullable
                      |> function
-                        | Some dt -> iso8601date dt
+                        | Some dt -> iso8601datez dt
                         | None -> "(n/a)"
 
     let mapEventsToMessage (calendarId,events:Google.Apis.Calendar.v3.Data.Events) =
         // todo: unit test
         let msg : Messages.CalendarUpdate = {
-            time = (DateTime.UtcNow.ToString())
+            time = iso8601datez DateTime.UtcNow
             // todo: handle all-day events?
             events = events.Items
                          |> Seq.map(fun e -> ({s=maybeDateTimeString e.Start;e=maybeDateTimeString e.End}:Messages.CalendarEvent))
