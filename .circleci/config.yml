@@ -6,7 +6,10 @@ jobs:
     steps:
       - checkout
       - run: dotnet --version && dotnet build
-      - run: dotnet test
+      - run: dotnet test --logger junit
+      - run: mkdir -p test-results/unit && cp roommate.test/TestResults/TestResults.xml test-results/unit/roommate.test.xml && cp roommate-lambda.Tests/TestResults/TestResults.xml test-results/unit/roommate-lambda.test.xml
+      - store_test_results:
+          path: test-results
 
   deploy:
     docker:
