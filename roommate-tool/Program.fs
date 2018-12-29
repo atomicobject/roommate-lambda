@@ -114,7 +114,8 @@ let main argv =
             |> printfn "%s"
 
         if results.Contains Fetch_Calendars then
-            let calendarIds = config.meetingRooms |> List.map (fun mr -> mr.calendarId)
+            let calendarIds = RoommateConfig.allCalendarIds config
+//                config.meetingRooms |> List.map (fun mr -> mr.calendarId)
             printfn "Fetching calendar events.."
 
             calendarIds |> Seq.iter (fun calendarId ->

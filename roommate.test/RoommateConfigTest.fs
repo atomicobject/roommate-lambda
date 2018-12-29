@@ -7,7 +7,7 @@ module RoommateConfigTest =
     open Roommate
     open Roommate.RoommateConfig
 
-    let exampleJson = """{"myCalendar":"mine","meetingRooms":[{"calendarId":"abc","name":"Ada"}],"boardAssignments":[{"boardId":"12:34","calendarId":"789"}]}"""
+    let exampleJson = """{"myCalendar":"mine","meetingRooms":{"Ada":"abc"},"boardAssignments":{"789":["12:34"]}}"""
 
     // to strip indentation:
     let squish =
@@ -17,8 +17,8 @@ module RoommateConfigTest =
     [<Fact>]
     let ``serializes config``() =
         let config : RoommateConfig.RoommateConfig = {
-            boardAssignments = [{boardId="12:34";calendarId="789"}]
-            meetingRooms = [{name="Ada";calendarId="abc"}]
+            boardAssignments = ["789",["12:34"]] |> Map.ofList
+            meetingRooms = ["Ada","abc"] |> Map.ofList
             myCalendar = "mine"
         }
 
@@ -29,8 +29,8 @@ module RoommateConfigTest =
     let ``deserializes config``() =
         let result = RoommateConfig.deserializeConfig exampleJson
         let expectation : RoommateConfig.RoommateConfig = {
-            boardAssignments = [{boardId="12:34";calendarId="789"}]
-            meetingRooms = [{name="Ada";calendarId="abc"}]
+            boardAssignments = ["789",["12:34"]] |> Map.ofList
+            meetingRooms = ["Ada","abc"] |> Map.ofList
             myCalendar = "mine"
         }
         result |> should equal expectation

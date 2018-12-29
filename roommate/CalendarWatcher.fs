@@ -21,8 +21,6 @@ module CalendarWatcher =
 
     let calendarIdFromPushNotification logFn (config:LambdaConfiguration) (pushNotificationHeaders:Map<string,string>) =
 
-        let calendarIds = config.roommateConfig.meetingRooms
-
         // https://developers.google.com/calendar/v3/push
         pushNotificationHeaders
         |> (fun h -> h |> Map.filter ( fun k _ -> k.Contains "Goog") |> Ok)
@@ -73,10 +71,8 @@ module CalendarWatcher =
         }
         Ok (calendarId,msg)
 
-    let determineTopicsToPublishTo logFn (config:LambdaConfiguration) (calendarId,msg) =
-        let boardTopics = config.roommateConfig.boardAssignments
-                            |> List.where (fun ba -> ba.calendarId = calendarId)
-                            |> List.map (fun ba -> ba.boardId)
+    let determineTopicsToPublishTo logFn (config:RoommateConfig) (calendarId,msg) =
+        let boardTopics = RoommateConfig.boardsForCalendar config calendarId
                             |> List.map (fun boardId -> sprintf "calendar-updates/for-board/%s" boardId)
         let calendarTopic = sprintf "calendar-updates/for-calendar/%s" calendarId
         let topics = calendarTopic::boardTopics
@@ -93,7 +89,8 @@ module CalendarWatcher =
         )
         Ok ""
 
-    let lookupCalendarForBoard (config:LambdaConfiguration) boardId =
-        config.roommateConfig.boardAssignments
-            |> List.tryFind (fun ba -> ba.boardId = boardId)
-            |> Option.map (fun ba -> ba.calendarId)
+    let flip (a,b) = (b,a)
+
+    let lookupCalendarForBoard (config:RoommateConfig) boardId =
+        let reversed = config.boardAssignments |> Map.toList |> List.map (fun (calId,boardList) -> boardList |> List.map (fun b -> b,calId)) |> List.concat |> Map.ofList
+        reversed.TryFind boardId
