@@ -34,3 +34,23 @@ module RoommateConfigTest =
             myCalendar = "mine"
         }
         result |> should equal expectation
+
+    [<Fact>]
+    let ``parses calendar ID from URI``() =
+        // from X-Goog-Resource-URI header in push notification
+        let uri = "https://www.googleapis.com/calendar/v3/calendars/atomicobject.com_234523452345@resource.calendar.google.com/events?maxResults=250&alt=json"
+        CalendarWatcher.calIdFromURI uri |> should equal "atomicobject.com_234523452345@resource.calendar.google.com"
+
+    [<Fact>]
+    let ``determines short name from full calendar name``() =
+        shortName "AOGR-2-Cerf & Kahn (x23456) (2) [Telephone]" |> should equal "AOGR-2-Cerf & Kahn"
+        shortName "AOGR-1-Hopper (x12345) (10) [TV, Telephone]" |> should equal "AOGR-1-Hopper"
+        shortName "AOA2-2-Radium (x5432) (4) [TV, Telephone]" |> should equal "AOA2-2-Radium"
+
+    [<Fact>]
+    let ``shorten cal ID to just the number`` () =
+        shortCalId "atomicobject.com_234523452345@resource.calendar.google.com" |> should equal "234523452345"
+
+    [<Fact>]
+    let ``lengthen cal ID number to full ID string`` () =
+        longCalId "234523452345" |> should equal "atomicobject.com_234523452345@resource.calendar.google.com"

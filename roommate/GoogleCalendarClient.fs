@@ -37,6 +37,12 @@ module GoogleCalendarClient =
         async {
             return service
         }
+
+    type CalNameAndId = {
+        calId:string
+        name:string
+    }
+
     let fetchCalendarIds (calendarService:CalendarService) =
         async {
             let request = calendarService.CalendarList.List()
@@ -44,7 +50,7 @@ module GoogleCalendarClient =
             return result.Items
                 |> Seq.filter (fun cal -> cal.Summary.StartsWith("AO"))
                 |> Seq.filter (fun cal -> cal.Summary.Contains("Social") |> not)
-                |> Seq.map (fun item -> item.Id, item.Summary)
+                |> Seq.map (fun item -> {calId=item.Id;name=item.Summary})
         }
 
     let createEvent (calendarService:CalendarService) calendarId attendee =
@@ -91,8 +97,8 @@ module GoogleCalendarClient =
         events.Items
             |> Seq.map (fun e -> e.Start.DateTime |> Option.ofNullable,e.End.DateTime |> Option.ofNullable,e.Summary)
             |> Seq.filter (fun (a,b,_) -> a.IsSome && b.IsSome)
-            |> Seq.map (fun (a,b,c) -> a |> someOrBust |> hoursMinutes, b |> someOrBust |> hoursMinutes, c)
-            |> Seq.iter (fun (a,b,c) -> logFn (sprintf "  %s-%s  %s" a b c))
+            |> Seq.map (fun (a,b,name) -> a |> someOrBust |>(fun d -> d.Date) ,a |> someOrBust |> hoursMinutes, b |> someOrBust |> hoursMinutes, name)
+            |> Seq.iter (fun (d,a,b,name) -> logFn (sprintf "%s\t%s-%s\t%s" (d.ToString("MM/dd")) a b name))
 
     let activateWebhook (calendarService:CalendarService) calendarId url =
         async {

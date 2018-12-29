@@ -108,14 +108,13 @@ let main argv =
 
             GoogleCalendarClient.fetchCalendarIds calendarService
             |> Async.RunSynchronously
-            |> Seq.map makeRecord // the type from the config file
-            |> Seq.toList
+            |> Seq.map (fun x -> (x.name |> shortName, x.calId |> shortCalId))
+            |> Map.ofSeq
             |> RoommateConfig.serializeIndented
             |> printfn "%s"
 
         if results.Contains Fetch_Calendars then
             let calendarIds = RoommateConfig.allCalendarIds config
-//                config.meetingRooms |> List.map (fun mr -> mr.calendarId)
             printfn "Fetching calendar events.."
 
             calendarIds |> Seq.iter (fun calendarId ->

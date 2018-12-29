@@ -27,7 +27,7 @@ module RoommateConfig =
         {myCalendar = "calendar ID to create events on"
          meetingRooms = ["name","12345"] |> Map.ofList
          boardAssignments =
-             ["board ID", ["calendarID board is assigned to"]] |> Map.ofList}
+             ["calendarID",["board ID 1";"board ID 2"]] |> Map.ofList}
 
     let looukpCalByName config search =
         config.meetingRooms |> Map.toList |> List.map( fun (a,b) -> {name=a;calendarId=b})
@@ -46,9 +46,6 @@ module RoommateConfig =
             | Some room -> room
             | None -> failwith (sprintf "no room found matching %s (check your config?)" search)
 
-    let allCalendarIds config =
-        config.meetingRooms |> Map.toList |> List.map snd
-
     let boardsForCalendar config calendarId =
         config.boardAssignments
             |> Map.tryFind calendarId
@@ -56,9 +53,17 @@ module RoommateConfig =
                 | Some boards -> boards
                 | None -> []
 
+    let calIdFromURI (calURI:string) =
+        calURI.Split('/') |> List.ofArray |> List.find (fun x -> x.Contains "@")
 
+    let shortName (calName:string) =
+        calName.Split('(') |> List.ofArray |> List.head |> (fun s -> s.Trim())
 
+    let shortCalId (longCalId:string) =
+        longCalId.Split('_').[1].Split('@').[0]
 
+    let longCalId (shortCalid:string) =
+        sprintf "atomicobject.com_%s@resource.calendar.google.com" shortCalid
 
-
-
+    let allCalendarIds config =
+        config.meetingRooms |> Map.toList |> List.map snd |> List.map longCalId

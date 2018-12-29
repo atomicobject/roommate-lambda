@@ -94,3 +94,5 @@ module CalendarWatcher =
     let lookupCalendarForBoard (config:RoommateConfig) boardId =
         let reversed = config.boardAssignments |> Map.toList |> List.map (fun (calId,boardList) -> boardList |> List.map (fun b -> b,calId)) |> List.concat |> Map.ofList
         reversed.TryFind boardId
+
+
