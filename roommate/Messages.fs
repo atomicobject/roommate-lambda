@@ -18,6 +18,7 @@ module Messages =
 
     type ReservationRequest = {
         boardId: string
-        // todo: start, end
+        start: int32
+        finish: int32
     }
 

@@ -82,11 +82,15 @@ let main argv =
             let topic,message = results.GetResult Mqtt_Publish
             let portalUrl = "https://console.aws.amazon.com/iot/home?region=us-east-1#/test"
             printfn "You can also pub/sub from the aws portal at:\n%s" portalUrl
-            let result = AwsIotClient.publish mqttEndpoint topic message
-            printfn "%s" (result.HttpStatusCode.ToString())
+
+            // IOT wants your JSON to have string keys.
+            let fixJson = Newtonsoft.Json.JsonConvert.DeserializeObject<Map<string,string>> >> Newtonsoft.Json.JsonConvert.SerializeObject
+
+            let canonicalizedMessage = fixJson message
+            printfn "message: %s" canonicalizedMessage
+            let result = AwsIotClient.publish mqttEndpoint topic canonicalizedMessage
+            printfn "result: %s" (serializeIndented result)
             Environment.Exit 0
-
-
 
         let authType = results.TryGetResult Auth
 
