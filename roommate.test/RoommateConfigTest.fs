@@ -18,7 +18,7 @@ module RoommateConfigTest =
     let ``serializes config``() =
         let config : RoommateConfig.RoommateConfig = {
             boardAssignments = ["789",["12:34"]] |> Map.ofList
-            meetingRooms = ["Ada",ShortCalId "abc"] |> Map.ofList
+            meetingRooms = ["Ada","abc"] |> Map.ofList
             myCalendar = "mine"
         }
 
@@ -30,7 +30,7 @@ module RoommateConfigTest =
         let result = RoommateConfig.deserializeConfig exampleJson
         let expectation : RoommateConfig.RoommateConfig = {
             boardAssignments = ["789",["12:34"]] |> Map.ofList
-            meetingRooms = ["Ada",ShortCalId "abc"] |> Map.ofList
+            meetingRooms = ["Ada","abc"] |> Map.ofList
             myCalendar = "mine"
         }
         result |> should equal expectation
@@ -43,8 +43,8 @@ module RoommateConfigTest =
 
     [<Fact>]
     let ``shorten cal ID to just the number`` () =
-        shorten (LongCalId "atomicobject.com_234523452345@resource.calendar.google.com") |> should equal (ShortCalId "234523452345")
+        shorten (LongCalId "atomicobject.com_234523452345@resource.calendar.google.com") |> should equal "234523452345"
 
     [<Fact>]
     let ``lengthen cal ID number to full ID string`` () =
-        lengthen (ShortCalId "234523452345") |> should equal (LongCalId "atomicobject.com_234523452345@resource.calendar.google.com")
+        lengthen "234523452345" |> should equal (LongCalId "atomicobject.com_234523452345@resource.calendar.google.com")

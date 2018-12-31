@@ -1,9 +1,7 @@
 namespace Roommate
 
 module RoommateConfig =
-    // todo: later alias shortCalId to string so that it serializes cleanly:
-    //type ShortCalId = string
-    type ShortCalId = ShortCalId of string
+    type ShortCalId = string // aliased to string so that it serializes cleanly
     type LongCalId = LongCalId of string
 
     type MeetingRoom =
@@ -21,9 +19,9 @@ module RoommateConfig =
          boardAssignments: Map<string,string list>}
 
     let shorten (LongCalId s) : ShortCalId =
-        s.Split('_').[1].Split('@').[0] |> ShortCalId
+        s.Split('_').[1].Split('@').[0]
 
-    let lengthen (ShortCalId s) =
+    let lengthen (s:ShortCalId) : LongCalId =
         sprintf "atomicobject.com_%s@resource.calendar.google.com" s |> LongCalId
 
     let serializeIndented o : string =
@@ -37,7 +35,7 @@ module RoommateConfig =
 
     let defaultConfig: RoommateConfig =
         {myCalendar = "calendar ID to create events on"
-         meetingRooms = ["name",ShortCalId "12345"] |> Map.ofList
+         meetingRooms = ["name","12345"] |> Map.ofList
          boardAssignments =
              ["calendarID",["board ID 1";"board ID 2"]] |> Map.ofList}
 
@@ -66,7 +64,7 @@ module RoommateConfig =
 
     let boardsForCalendar config (calendarId:LongCalId) =
         config.boardAssignments
-            |> Map.tryFind (calendarId |> shorten |> fun (ShortCalId x) -> x)
+            |> Map.tryFind (calendarId |> shorten)
             |> function
                 | Some boards -> boards
                 | None -> []

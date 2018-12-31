@@ -100,7 +100,7 @@ module CalendarWatcher =
                         |> Map.ofList
 
         reversed.TryFind boardId
-            |> Option.map (ShortCalId >> lengthen)
+            |> Option.map lengthen
 
 
 
