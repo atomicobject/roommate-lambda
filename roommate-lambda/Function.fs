@@ -104,3 +104,29 @@ type Functions() =
                             | Error e -> logFn e
                             | _ -> ()
         ()
+
+    member __.ReservationRequest (request: Messages.ReservationRequest) (context: ILambdaContext) =
+        sprintf "Reservation requested for boardId %s" (request.boardId) |> context.Logger.LogLine
+
+//        let config : LambdaConfiguration = {
+//            roommateConfig = readSecretFromEnv "roommateConfig" |> RoommateConfig.deserializeConfig
+//            serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
+//            serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
+//            serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
+//            mqttEndpoint = readSecretFromEnv "mqttEndpoint"
+//        }
+
+//        let logFn = context.Logger.LogLine
+//
+//        request.boardId |> lookupCalendarForBoard config.roommateConfig
+//                        |> function
+//                            | None -> Error  "Unknown board"
+//                            | Some calId -> Ok calId
+//                        |> Result.bind (processCalendarId logFn config)
+//                        |> Result.bind (mapEventsToMessage)
+//                        |> Result.bind (determineTopicsToPublishTo logFn config.roommateConfig)
+//                        |> Result.bind (sendMessageToTopics logFn config.mqttEndpoint)
+//                        |> function
+//                            | Error e -> logFn e
+//                            | _ -> ()
+        ()
