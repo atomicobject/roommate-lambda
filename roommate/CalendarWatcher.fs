@@ -34,7 +34,7 @@ module CalendarWatcher =
                             | Some resourceId -> Ok resourceId)
         |> Result.map calIdFromURI
 
-    let processCalendarId logFn (config:LambdaConfiguration) calId =
+    let fetchEventsForCalendar logFn (config:LambdaConfiguration) calId =
         let (LongCalId s) = calId
         calId |> (fun calId ->
             match RoommateConfig.tryLookupCalById config.roommateConfig calId with
@@ -49,6 +49,22 @@ module CalendarWatcher =
                 events |> logEvents logFn
 
                 room.calendarId,events
+                )
+
+    let createCalendarEvent logFn (config:LambdaConfiguration) (startTime:DateTime) (endTime:DateTime) (calId:LongCalId) =
+        let (LongCalId s) = calId
+        calId |> (fun calId ->
+            match RoommateConfig.tryLookupCalById config.roommateConfig calId with
+            | Some room -> Ok room
+            | None -> s |> sprintf "Calendar %s is not in my list!" |> Error )
+        |> Result.map (fun room ->
+                sprintf "Calendar ID %s" room.name |> logFn
+                let calendarService = serviceAccountSignIn config.serviceAccountEmail config.serviceAccountPrivKey config.serviceAccountAppName |> Async.RunSynchronously
+
+                // todo: recognize when we need to _edit_ an event
+//                let events = fetchEvents calendarService room.calendarId |> Async.RunSynchronously
+//                events |> logEvents logFn
+                createEvent calendarService config.roommateConfig.myCalendar room.calendarId startTime endTime  |> Async.RunSynchronously
                 )
 
     let iso8601datez (dt:DateTime) =

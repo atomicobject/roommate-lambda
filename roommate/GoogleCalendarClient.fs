@@ -54,10 +54,10 @@ module GoogleCalendarClient =
                 |> Seq.map (fun item -> {calId=LongCalId item.Id;name=item.Summary})
         }
 
-    let createEvent (calendarService:CalendarService) calendarId (LongCalId attendee) =
+    let createEvent (calendarService:CalendarService) calendarId (LongCalId attendee) start finish =
         async {
-            let start = new EventDateTime(DateTime = System.Nullable (System.DateTime.Now.AddHours(12.0)))
-            let finish = new EventDateTime(DateTime = System.Nullable (System.DateTime.Now.AddHours(12.0).AddMinutes(15.0)))
+            let start = new EventDateTime(DateTime = System.Nullable start)
+            let finish = new EventDateTime(DateTime = System.Nullable finish)
 
             let room = new EventAttendee(Email = attendee)
             let event = new Event(

@@ -150,7 +150,10 @@ let main argv =
             let attendeeNameSubstring = results.GetResult Create_Event
             // todo: lookup english name of config.myCalendar
             let roomToInvite = RoommateConfig.looukpCalByName config attendeeNameSubstring
-            let result = (GoogleCalendarClient.createEvent calendarService config.myCalendar roomToInvite.calendarId |> Async.RunSynchronously)
+
+            let start = System.DateTime.Now.AddHours(12.0)
+            let finish = System.DateTime.Now.AddHours(12.0).AddMinutes(15.0)
+            let result = (GoogleCalendarClient.createEvent calendarService config.myCalendar roomToInvite.calendarId start finish |> Async.RunSynchronously)
 
             printfn "created:"
             printfn ""
