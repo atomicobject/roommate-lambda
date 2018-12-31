@@ -8,6 +8,7 @@ module GoogleCalendarClient =
     open Google.Apis.Calendar.v3.Data;
     open Google.Apis.Services;
     open Google.Apis.Util.Store;
+    open RoommateConfig
     open System
     open System.Threading
 
@@ -39,7 +40,7 @@ module GoogleCalendarClient =
         }
 
     type CalNameAndId = {
-        calId:string
+        calId:LongCalId
         name:string
     }
 
@@ -50,10 +51,10 @@ module GoogleCalendarClient =
             return result.Items
                 |> Seq.filter (fun cal -> cal.Summary.StartsWith("AO"))
                 |> Seq.filter (fun cal -> cal.Summary.Contains("Social") |> not)
-                |> Seq.map (fun item -> {calId=item.Id;name=item.Summary})
+                |> Seq.map (fun item -> {calId=LongCalId item.Id;name=item.Summary})
         }
 
-    let createEvent (calendarService:CalendarService) calendarId attendee =
+    let createEvent (calendarService:CalendarService) calendarId (LongCalId attendee) =
         async {
             let start = new EventDateTime(DateTime = System.Nullable (System.DateTime.Now.AddHours(12.0)))
             let finish = new EventDateTime(DateTime = System.Nullable (System.DateTime.Now.AddHours(12.0).AddMinutes(15.0)))
@@ -70,7 +71,7 @@ module GoogleCalendarClient =
             return! request.ExecuteAsync() |> Async.AwaitTask
         }
 
-    let fetchEvents (calendarService:CalendarService) calendarId =
+    let fetchEvents (calendarService:CalendarService) (LongCalId calendarId) =
         async {
             let request = calendarService.Events.List(calendarId)
             request.TimeMin <-System.Nullable DateTime.Now
@@ -100,7 +101,7 @@ module GoogleCalendarClient =
             |> Seq.map (fun (a,b,name) -> a |> someOrBust |>(fun d -> d.Date) ,a |> someOrBust |> hoursMinutes, b |> someOrBust |> hoursMinutes, name)
             |> Seq.iter (fun (d,a,b,name) -> logFn (sprintf "%s\t%s-%s\t%s" (d.ToString("MM/dd")) a b name))
 
-    let activateWebhook (calendarService:CalendarService) calendarId url =
+    let activateWebhook (calendarService:CalendarService) (LongCalId calendarId) url =
         async {
             let guid = Guid.NewGuid().ToString()
             // https://developers.google.com/calendar/v3/push#making-watch-requests

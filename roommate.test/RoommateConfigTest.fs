@@ -18,7 +18,7 @@ module RoommateConfigTest =
     let ``serializes config``() =
         let config : RoommateConfig.RoommateConfig = {
             boardAssignments = ["789",["12:34"]] |> Map.ofList
-            meetingRooms = ["Ada","abc"] |> Map.ofList
+            meetingRooms = ["Ada",ShortCalId "abc"] |> Map.ofList
             myCalendar = "mine"
         }
 
@@ -30,16 +30,10 @@ module RoommateConfigTest =
         let result = RoommateConfig.deserializeConfig exampleJson
         let expectation : RoommateConfig.RoommateConfig = {
             boardAssignments = ["789",["12:34"]] |> Map.ofList
-            meetingRooms = ["Ada","abc"] |> Map.ofList
+            meetingRooms = ["Ada",ShortCalId "abc"] |> Map.ofList
             myCalendar = "mine"
         }
         result |> should equal expectation
-
-    [<Fact>]
-    let ``parses calendar ID from URI``() =
-        // from X-Goog-Resource-URI header in push notification
-        let uri = "https://www.googleapis.com/calendar/v3/calendars/atomicobject.com_234523452345@resource.calendar.google.com/events?maxResults=250&alt=json"
-        CalendarWatcher.calIdFromURI uri |> should equal "atomicobject.com_234523452345@resource.calendar.google.com"
 
     [<Fact>]
     let ``determines short name from full calendar name``() =
@@ -49,8 +43,8 @@ module RoommateConfigTest =
 
     [<Fact>]
     let ``shorten cal ID to just the number`` () =
-        shortCalId "atomicobject.com_234523452345@resource.calendar.google.com" |> should equal "234523452345"
+        shorten (LongCalId "atomicobject.com_234523452345@resource.calendar.google.com") |> should equal (ShortCalId "234523452345")
 
     [<Fact>]
     let ``lengthen cal ID number to full ID string`` () =
-        longCalId "234523452345" |> should equal "atomicobject.com_234523452345@resource.calendar.google.com"
+        lengthen (ShortCalId "234523452345") |> should equal (LongCalId "atomicobject.com_234523452345@resource.calendar.google.com")

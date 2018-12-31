@@ -17,7 +17,7 @@ module CalendarWatcher =
     }
 
     let calIdFromURI (calURI:string) =
-        calURI.Split('/') |> List.ofArray |> List.find (fun x -> x.Contains "atomicobject.com")
+        calURI.Split('/') |> List.ofArray |> List.find (fun x -> x.Contains "atomicobject.com") |> LongCalId
 
     let calendarIdFromPushNotification logFn (config:LambdaConfiguration) (pushNotificationHeaders:Map<string,string>) =
 
@@ -35,10 +35,11 @@ module CalendarWatcher =
         |> Result.map calIdFromURI
 
     let processCalendarId logFn (config:LambdaConfiguration) calId =
+        let (LongCalId s) = calId
         calId |> (fun calId ->
             match RoommateConfig.tryLookupCalById config.roommateConfig calId with
             | Some room -> Ok room
-            | None -> calId |> sprintf "Calendar %s is not in my list!" |> Error )
+            | None -> s |> sprintf "Calendar %s is not in my list!" |> Error )
         |> Result.map (fun room ->
                 sprintf "Calendar ID %s" room.name |> logFn
                 let calendarService = serviceAccountSignIn config.serviceAccountEmail config.serviceAccountPrivKey config.serviceAccountAppName |> Async.RunSynchronously
@@ -71,10 +72,10 @@ module CalendarWatcher =
         }
         Ok (calendarId,msg)
 
-    let determineTopicsToPublishTo logFn (config:RoommateConfig) (calendarId,msg) =
+    let determineTopicsToPublishTo logFn (config:RoommateConfig) (calendarId:LongCalId,msg) =
         let boardTopics = RoommateConfig.boardsForCalendar config calendarId
                             |> List.map (fun boardId -> sprintf "calendar-updates/for-board/%s" boardId)
-        let calendarTopic = sprintf "calendar-updates/for-calendar/%s" calendarId
+        let calendarTopic = sprintf "calendar-updates/for-calendar/%s" (calendarId |> fun (LongCalId s) -> s)
         let topics = calendarTopic::boardTopics
         Ok (topics,msg)
 
@@ -92,7 +93,14 @@ module CalendarWatcher =
     let flip (a,b) = (b,a)
 
     let lookupCalendarForBoard (config:RoommateConfig) boardId =
-        let reversed = config.boardAssignments |> Map.toList |> List.map (fun (calId,boardList) -> boardList |> List.map (fun b -> b,calId)) |> List.concat |> Map.ofList
+        let reversed = config.boardAssignments
+                        |> Map.toList
+                        |> List.map (fun (calId,boardList) -> boardList |> List.map (fun b -> b,calId))
+                        |> List.concat
+                        |> Map.ofList
+
         reversed.TryFind boardId
+            |> Option.map (ShortCalId >> lengthen)
+
 
 

@@ -103,12 +103,10 @@ let main argv =
 
         if results.Contains Print_Ids then
             printfn "Retrieving meeting rooms (these can be pasted into config file).."
-            let makeRecord (id:string,name:string) : RoommateConfig.MeetingRoom =
-                {calendarId=id;name=name}
 
             GoogleCalendarClient.fetchCalendarIds calendarService
             |> Async.RunSynchronously
-            |> Seq.map (fun x -> (x.name |> shortName, x.calId |> shortCalId))
+            |> Seq.map (fun x -> (x.name |> shortName, x.calId |> shorten))
             |> Map.ofSeq
             |> RoommateConfig.serializeIndented
             |> printfn "%s"
@@ -124,7 +122,7 @@ let main argv =
             )
         if results.Contains Subscribe_Webhook then
             let calendar,endpoint = results.GetResult Subscribe_Webhook
-            let result = GoogleCalendarClient.activateWebhook calendarService calendar endpoint |> Async.RunSynchronously
+            let result = GoogleCalendarClient.activateWebhook calendarService (LongCalId calendar) endpoint |> Async.RunSynchronously
             ()
 
         if results.Contains Create_Event then
@@ -140,7 +138,8 @@ let main argv =
         if results.Contains Lookup_CalId then
             results.GetResult Lookup_CalId
             |> RoommateConfig.looukpCalByName config
-            |> fun cal -> printfn "%s\n%s" cal.name cal.calendarId
+            |> fun mr -> mr.name,mr.calendarId
+            |> fun (name,LongCalId calId) -> printfn "%s\n%s" name calId
             ()
 
     0

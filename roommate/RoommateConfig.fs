@@ -1,18 +1,30 @@
 namespace Roommate
 
 module RoommateConfig =
+    // todo: later alias shortCalId to string so that it serializes cleanly:
+    //type ShortCalId = string
+    type ShortCalId = ShortCalId of string
+    type LongCalId = LongCalId of string
+
     type MeetingRoom =
-        {calendarId: string
+        {calendarId: LongCalId
          name: string}
 
     type BoardAssignment =
         {boardId: string // mac address?
          calendarId: string}
 
+
     type RoommateConfig =
         {myCalendar: string // create reservations on this calendar
-         meetingRooms: Map<string,string>
+         meetingRooms: Map<string,ShortCalId>
          boardAssignments: Map<string,string list>}
+
+    let shorten (LongCalId s) : ShortCalId =
+        s.Split('_').[1].Split('@').[0] |> ShortCalId
+
+    let lengthen (ShortCalId s) =
+        sprintf "atomicobject.com_%s@resource.calendar.google.com" s |> LongCalId
 
     let serializeIndented o : string =
         Newtonsoft.Json.JsonConvert.SerializeObject(o, Newtonsoft.Json.Formatting.Indented)
@@ -25,30 +37,36 @@ module RoommateConfig =
 
     let defaultConfig: RoommateConfig =
         {myCalendar = "calendar ID to create events on"
-         meetingRooms = ["name","12345"] |> Map.ofList
+         meetingRooms = ["name",ShortCalId "12345"] |> Map.ofList
          boardAssignments =
              ["calendarID",["board ID 1";"board ID 2"]] |> Map.ofList}
 
+    let meetingRooms config =
+        config.meetingRooms
+            |> Map.toList
+            |> List.map (fun (name,calId) ->{name=name;calendarId=lengthen calId})
+
     let looukpCalByName config search =
-        config.meetingRooms |> Map.toList |> List.map( fun (a,b) -> {name=a;calendarId=b})
+        meetingRooms config
         |> List.tryFind (fun room -> room.name.ToLower().Contains search)
         |> function
             | Some room -> room
             | None -> failwith (sprintf "no room found matching %s (check your config?)" search)
 
     let tryLookupCalById config search =
-        config.meetingRooms |> Map.toList |> List.map( fun (a,b) -> {name=a;calendarId=b})
+        meetingRooms config
         |> List.tryFind (fun room -> room.calendarId = search)
 
     let lookupCalById config search =
+        let (LongCalId s) = search
         tryLookupCalById config search
         |> function
             | Some room -> room
-            | None -> failwith (sprintf "no room found matching %s (check your config?)" search)
+            | None -> failwith (sprintf "no room found matching %s (check your config?)" s)
 
-    let boardsForCalendar config calendarId =
+    let boardsForCalendar config (calendarId:LongCalId) =
         config.boardAssignments
-            |> Map.tryFind calendarId
+            |> Map.tryFind (calendarId |> shorten |> fun (ShortCalId x) -> x)
             |> function
                 | Some boards -> boards
                 | None -> []
@@ -59,11 +77,5 @@ module RoommateConfig =
     let shortName (calName:string) =
         calName.Split('(') |> List.ofArray |> List.head |> (fun s -> s.Trim())
 
-    let shortCalId (longCalId:string) =
-        longCalId.Split('_').[1].Split('@').[0]
-
-    let longCalId (shortCalid:string) =
-        sprintf "atomicobject.com_%s@resource.calendar.google.com" shortCalid
-
     let allCalendarIds config =
-        config.meetingRooms |> Map.toList |> List.map snd |> List.map longCalId
+        config.meetingRooms |> Map.toList |> List.map snd |> List.map lengthen
