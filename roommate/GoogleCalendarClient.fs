@@ -103,15 +103,36 @@ module GoogleCalendarClient =
 
     let activateWebhook (calendarService:CalendarService) (LongCalId calendarId) url =
         async {
-            let guid = Guid.NewGuid().ToString()
+            let subscriptionId = sprintf "roommate-tool-%s" (shorten (LongCalId calendarId))
             // https://developers.google.com/calendar/v3/push#making-watch-requests
-            let channel = new Channel(Address = url, Type = "web_hook",Id = guid)
+            let channel = new Channel(Address = url, Type = "web_hook",Id = subscriptionId)
 
             let request = calendarService.Events.Watch(channel,calendarId)
 
             // Execute the request
             let! result =request.ExecuteAsync() |> Async.AwaitTask
-            printfn "watch result: %s" (result.ToString())
+            return result
+        }
+
+    let deactivateWebhook (calendarService:CalendarService) (LongCalId calendarId) url resourceId =
+        async {
+            (*
+                https://developers.google.com/calendar/v3/push#making-watch-requests
+
+                The Subscription ID is a value we specify at the time of creating the channel.
+                The Resource ID comes from Google.
+
+                Both are given to us in the HTTP Headers with each push notification, and
+                can be seen in the Lambda logs.
+
+            *)
+            let subscriptionId = sprintf "roommate-tool-%s" (shorten (LongCalId calendarId))
+            let channel = new Channel(ResourceId = resourceId, Id = subscriptionId)
+            let request = calendarService.Channels.Stop(channel);
+
+            // Execute the request
+            let! result = request.ExecuteAsync() |> Async.AwaitTask
+            return result
         }
 
     let summarizeEvent (event:Event) =

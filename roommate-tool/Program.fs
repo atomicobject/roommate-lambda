@@ -25,6 +25,8 @@ type CLIArguments =
     | Print_Ids
     | Fetch_Calendars
     | Subscribe_Webhook of calendar:string * endpoint:string
+    | Unsubscribe_Webhook of calendar:string * resourceId:string * endpoint:string
+    | Subscribe_All_Webhooks of endpoint:string
     | Create_Event of attendee:string
     | Lookup_CalId of search:string
     | Mqtt_Publish of topic:string * message:string
@@ -38,6 +40,8 @@ with
             | Lookup_CalId _ -> "lookup calendar ID for name substring"
             | Fetch_Calendars -> "retrieve events from all calendars"
             | Subscribe_Webhook _ -> "subscribe to webhook for calendar x and endpoint y"
+            | Unsubscribe_Webhook _ -> "unsubscribe to webhook for calendar x and endpoint y"
+            | Subscribe_All_Webhooks _ -> "subscribe to webhook for all configured calendars to given endpoint"
             | Create_Event _ -> "create event on calendar (by name substring)"
             | Mqtt_Publish _ -> "publish message to MQTT topic"
 
@@ -120,9 +124,22 @@ let main argv =
                     |> Async.RunSynchronously
                     |> GoogleCalendarClient.logEvents (printfn "%s")
             )
+
         if results.Contains Subscribe_Webhook then
             let calendar,endpoint = results.GetResult Subscribe_Webhook
             let result = GoogleCalendarClient.activateWebhook calendarService (LongCalId calendar) endpoint |> Async.RunSynchronously
+            printfn "subscribe result: \n%s" (serializeIndented result)
+
+        if results.Contains Unsubscribe_Webhook then
+            let calendar,resourceId,endpoint = results.GetResult Unsubscribe_Webhook
+            let result = GoogleCalendarClient.deactivateWebhook calendarService (LongCalId calendar) endpoint resourceId |> Async.RunSynchronously
+            printfn "unsubscribe result: \n%s" (serializeIndented result)
+
+        if results.Contains Subscribe_All_Webhooks then
+            let endpoint = results.GetResult Subscribe_All_Webhooks
+            let calendarIds = RoommateConfig.allCalendarIds config
+            calendarIds |> List.iter (fun calId -> GoogleCalendarClient.activateWebhook calendarService calId endpoint |> Async.RunSynchronously |> ignore)
+            // todo: log all the results
             ()
 
         if results.Contains Create_Event then
