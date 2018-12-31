@@ -66,7 +66,7 @@ type Functions() =
             |> Result.bind (calendarIdFromPushNotification logFn config)
             |> Result.bind (processCalendarId logFn config)
             |> Result.bind (mapEventsToMessage)
-            |> Result.bind (determineTopicsToPublishTo logFn config)
+            |> Result.bind (determineTopicsToPublishTo logFn config.roommateConfig)
             |> Result.bind (sendMessageToTopics logFn config.mqttEndpoint)
             |> function
                 | Error e -> logFn e
@@ -92,13 +92,13 @@ type Functions() =
 
         let logFn = context.Logger.LogLine
 
-        request.boardId |> lookupCalendarForBoard config
+        request.boardId |> lookupCalendarForBoard config.roommateConfig
                         |> function
                             | None -> Error  "Unknown board"
                             | Some calId -> Ok calId
                         |> Result.bind (processCalendarId logFn config)
                         |> Result.bind (mapEventsToMessage)
-                        |> Result.bind (determineTopicsToPublishTo logFn config)
+                        |> Result.bind (determineTopicsToPublishTo logFn config.roommateConfig)
                         |> Result.bind (sendMessageToTopics logFn config.mqttEndpoint)
                         |> function
                             | Error e -> logFn e
