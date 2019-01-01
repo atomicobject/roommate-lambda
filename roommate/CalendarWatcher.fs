@@ -64,7 +64,8 @@ module CalendarWatcher =
                 // todo: recognize when we need to _edit_ an event
 //                let events = fetchEvents calendarService room.calendarId |> Async.RunSynchronously
 //                events |> logEvents logFn
-                createEvent calendarService config.roommateConfig.myCalendar room.calendarId startTime endTime  |> Async.RunSynchronously
+                let result = createEvent calendarService config.roommateConfig.myCalendar room.calendarId startTime endTime  |> Async.RunSynchronously
+                sprintf "create result: %s" (serializeIndented result) |> logFn
                 )
 
     let iso8601datez (dt:DateTime) =
