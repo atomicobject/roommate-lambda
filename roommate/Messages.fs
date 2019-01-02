@@ -5,6 +5,7 @@ module Messages =
     type CalendarEvent = {
         s: string
         e: string
+        r: bool
     }
 
     type CalendarUpdate = {
