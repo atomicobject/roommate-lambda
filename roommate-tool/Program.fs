@@ -24,6 +24,7 @@ type CLIArguments =
     | Auth of AuthTypes
     | Print_Ids
     | Fetch_Calendars
+    | Fetch_Calendar of calendarName:string
     | Subscribe_Webhook of calendar:string * endpoint:string
     | Unsubscribe_Webhook of calendar:string * resourceId:string * endpoint:string
     | Subscribe_All_Webhooks of endpoint:string
@@ -39,6 +40,7 @@ with
             | Print_Ids -> "print available Google calendar IDs"
             | Lookup_CalId _ -> "lookup calendar ID for name substring"
             | Fetch_Calendars -> "retrieve events from all calendars"
+            | Fetch_Calendar _ -> "retrieve events for specific calendar"
             | Subscribe_Webhook _ -> "subscribe to webhook for calendar x and endpoint y"
             | Unsubscribe_Webhook _ -> "unsubscribe to webhook for calendar x and endpoint y"
             | Subscribe_All_Webhooks _ -> "subscribe to webhook for all configured calendars to given endpoint"
@@ -47,6 +49,17 @@ with
 
 
 let CONFIG_FILENAME = "roommate.json"
+
+let printUsageAndExamples (parser:ArgumentParser<CLIArguments>) results =
+    printfn "Roommate Tool"
+    printfn "%s" (parser.PrintUsage())
+    printfn "EXAMPLES"
+    printfn ""
+    printfn "%s\t        //print all calendar IDs visible to the account" (parser.PrintCommandLineArgumentsFlat [Auth ClientIdSecret; Print_Ids])
+    printfn "%s\t//fetch calendar events" (parser.PrintCommandLineArgumentsFlat [Auth ServiceAccount; Fetch_Calendar "eniac"])
+    printfn ""
+    printfn "Authentication uses environment variables googleClientId/googleClientSecret or"
+    printfn "serviceAccountEmail/serviceAccountAppName/serviceAccountPrivKey"
 
 [<EntryPoint>]
 let main argv =
@@ -67,15 +80,7 @@ let main argv =
 
     match results.GetAllResults() with
     | [] ->
-        printfn "Roommate Tool"
-        printfn "%s" (parser.PrintUsage())
-        printfn "EXAMPLES"
-        printfn ""
-        printfn "%s\t        //print all calendar IDs visible to the account" (parser.PrintCommandLineArgumentsFlat [Auth ClientIdSecret; Print_Ids])
-        printfn "%s\t//create an event" (parser.PrintCommandLineArgumentsFlat [Auth ServiceAccount; Create_Event "eniac"])
-        printfn ""
-        printfn "Authentication uses environment variables googleClientId/googleClientSecret or"
-        printfn "serviceAccountEmail/serviceAccountAppName/serviceAccountPrivKey"
+        printUsageAndExamples parser results
     | _ ->
         if results.Contains Mqtt_Publish then
             let mqttEndpoint = readSecretFromEnv "mqttEndpoint"
@@ -118,6 +123,17 @@ let main argv =
             |> Map.ofSeq
             |> RoommateConfig.serializeIndented
             |> printfn "%s"
+
+        if results.Contains Fetch_Calendar then
+            let calendarName = results.GetResult Fetch_Calendar
+
+            let calendarId = calendarName
+                                |> RoommateConfig.looukpCalByName config
+                                |> fun mr -> mr.calendarId
+
+            GoogleCalendarClient.fetchEvents calendarService calendarId
+                |> Async.RunSynchronously
+                |> GoogleCalendarClient.logEvents (printfn "%s")
 
         if results.Contains Fetch_Calendars then
             let calendarIds = RoommateConfig.allCalendarIds config

@@ -83,6 +83,9 @@ module GoogleCalendarClient =
             return! request.ExecuteAsync() |> Async.AwaitTask
         }
 
+    let isRoommateEvent (event:Event) =
+        event.Creator.Email.StartsWith("roommate") && event.Creator.Email.EndsWith(".gserviceaccount.com")
+
     let logEvents (logFn: string -> unit) (events:Events) =
         logFn (sprintf "\n==== %s %s ====" events.Summary events.Description)
 
@@ -96,10 +99,19 @@ module GoogleCalendarClient =
                 | Some opt -> opt
 
         events.Items
-            |> Seq.map (fun e -> e.Start.DateTime |> Option.ofNullable,e.End.DateTime |> Option.ofNullable,e.Summary)
-            |> Seq.filter (fun (a,b,_) -> a.IsSome && b.IsSome)
-            |> Seq.map (fun (a,b,name) -> a |> someOrBust |>(fun d -> d.Date) ,a |> someOrBust |> hoursMinutes, b |> someOrBust |> hoursMinutes, name)
-            |> Seq.iter (fun (d,a,b,name) -> logFn (sprintf "%s\t%s-%s\t%s" (d.ToString("MM/dd")) a b name))
+            |> Seq.filter (fun e ->
+                                e.Start.DateTime |> Option.ofNullable |> Option.isSome
+                                    && e.End.DateTime |> Option.ofNullable |> Option.isSome )
+            |> Seq.iter (fun e ->
+                let start = e.Start.DateTime |> Option.ofNullable |> someOrBust
+                let fin = e.End.DateTime |> Option.ofNullable |> someOrBust
+                logFn (sprintf "%s\t%s-%s\t%s\t%s" (start.ToString("MM/dd"))
+                                               (start |> hoursMinutes)
+                                               (fin |> hoursMinutes)
+                                               e.Summary
+                                               (if isRoommateEvent e then "(R)" else "")
+                                               )
+                )
 
     let activateWebhook (calendarService:CalendarService) (LongCalId calendarId) url =
         async {
