@@ -51,6 +51,19 @@ module CalendarWatcher =
                 room.calendarId,events
                 )
 
+    type CalendarCreateAction =
+        | CreateEvent of DateTime * DateTime
+        | UpdateEvent of string * DateTime * DateTime
+        | Nothing of string
+
+    let determineWhatToDo (events:Google.Apis.Calendar.v3.Data.Event list) (startTime:DateTime) (endTime:DateTime) =
+        if startTime > endTime then
+            (Nothing "invalid event")
+        else if endTime < System.DateTime.UtcNow then
+            (Nothing "cannot create historic event")
+        else
+            CreateEvent (startTime, endTime)
+
     let createCalendarEvent logFn (config:LambdaConfiguration) (startTime:DateTime) (endTime:DateTime) (calId:LongCalId) =
         let (LongCalId s) = calId
         calId |> (fun calId ->
@@ -61,10 +74,16 @@ module CalendarWatcher =
                 sprintf "Calendar ID %s" room.name |> logFn
                 let calendarService = serviceAccountSignIn config.serviceAccountEmail config.serviceAccountPrivKey config.serviceAccountAppName |> Async.RunSynchronously
 
-                // todo: recognize when we need to _edit_ an event
-//                let events = fetchEvents calendarService room.calendarId |> Async.RunSynchronously
-//                events |> logEvents logFn
-                let result = createEvent calendarService config.roommateConfig.myCalendar room.calendarId startTime endTime  |> Async.RunSynchronously
+                // todo: reject events in the past
+                // todo: reject if the room is busy
+                // todo: recognize when we need to _edit_ an event (and extend it)
+
+                let events = (fetchEvents calendarService room.calendarId |> Async.RunSynchronously).Items |> List.ofSeq
+                let action = determineWhatToDo events startTime endTime
+                let result = match action with
+                                | CreateEvent (s,e) -> createEvent calendarService config.roommateConfig.myCalendar room.calendarId s e |> Async.RunSynchronously
+                                | _ -> failwith "unimplemented"
+
                 sprintf "create result: %s" (serializeIndented result) |> logFn
                 )
 

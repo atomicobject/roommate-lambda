@@ -71,7 +71,28 @@ module GoogleCalendarClient =
             return! request.ExecuteAsync() |> Async.AwaitTask
         }
 
+    let editEvent (calendarService:CalendarService) =
+//        calendarService.Events.Update()
+        ()
+
+    let fetchRoommateEventsForRoom (calendarService:CalendarService) (LongCalId calendarId) =
+        async {
+            let request = calendarService.Events.List(calendarId)
+            // todo: make sure we get long events that are still ongoing
+            // (so maybe don't use TimeMin?)
+
+            // can we request events created or organized by roommate account?
+//            request.TimeMin <-System.Nullable DateTime.Now
+//            request.ShowDeleted <- System.Nullable false
+//            request.SingleEvents <- System.Nullable true
+//            request.MaxResults <- System.Nullable 10
+//            request.OrderBy <- System.Nullable EventsResource.ListRequest.OrderByEnum.StartTime
+
+            return! request.ExecuteAsync() |> Async.AwaitTask
+        }
+
     let fetchEvents (calendarService:CalendarService) (LongCalId calendarId) =
+        // todo: convert all-day events to start/end, make sure they work correctly
         async {
             let request = calendarService.Events.List(calendarId)
             request.TimeMin <-System.Nullable DateTime.Now
