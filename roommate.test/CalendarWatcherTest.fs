@@ -19,56 +19,119 @@ module CalendarWatcherTest =
 
     [<Fact>]
     let ``creates event``() =
-        let start = System.DateTime.UtcNow
-        let finish = (System.DateTime.UtcNow.AddMinutes 15.0)
-        let result = determineWhatToDo [] start finish
-        result |> should equal (CreateEvent (start, finish))
+        let now = System.DateTime.UtcNow
+        let range = {
+            start = now
+            finish = now.AddMinutes 15.0
+        }
+        let result = determineWhatToDo [] range
+        result |> should equal (CreateEvent range)
 
     [<Fact>]
     let ``rejects events in the past``() =
-        let start = System.DateTime.UtcNow.AddHours -1.0
-        let finish = start.AddMinutes 15.0
-        let result = determineWhatToDo [] start finish
+        let now = System.DateTime.UtcNow
+        let range = {
+            start = now.AddHours -1.0
+            finish = now.AddMinutes -45.0
+        }
+        let result = determineWhatToDo [] range
         result |> should equal (Nothing "cannot create historic event")
         ()
 
     [<Fact>]
+    let ``rejects events far in the future``() =
+        let now = System.DateTime.UtcNow
+        let range = {
+            start = now.AddHours 5.0
+            finish = now.AddHours 6.0
+        }
+        let result = determineWhatToDo [] range
+        result |> should equal (Nothing "cannot create event >3 hours in the future")
+        ()
+
+    [<Fact>]
     let ``rejects invalid events``() =
-        let finish = System.DateTime.UtcNow
-        let start = (System.DateTime.UtcNow.AddMinutes 15.0)
-        let result = determineWhatToDo [] start finish
+        let now = System.DateTime.UtcNow
+        let range = {
+            finish = now
+            start = now.AddMinutes 15.0
+        }
+        let result = determineWhatToDo [] range
         result |> should equal (Nothing "invalid event")
         ()
 
-    let buildGoogleEvent start finish =
-        new Event(Start = new EventDateTime(DateTime = System.Nullable start) , End= new EventDateTime(DateTime = System.Nullable finish))
+    let buildGoogleEventDateTime (time:System.DateTime) =
+        new EventDateTime(DateTimeRaw = time.ToString("o"))
+
+    let buildGoogleEvent (start:System.DateTime) (finish:System.DateTime) =
+        new Event(Start = buildGoogleEventDateTime start, End=buildGoogleEventDateTime finish)
 
     [<Fact>]
     let ``rejects when the room is already reserved``() =
-        let event = buildGoogleEvent (System.DateTime.UtcNow.AddHours -3.0) (System.DateTime.UtcNow.AddHours 3.0)
-        let events : Event list = [event]
+        let now = System.DateTime.UtcNow
+        let existingEventRange = {
+            range = {
+                start = now.AddHours -3.0
+                finish = now.AddHours 3.0
+            }
+            gcalId = "123"
+            isRoommateEvent = false
+        }
+//        let event = buildGoogleEvent
+        let events = [existingEventRange]
 
-        let start = System.DateTime.UtcNow
-        let finish = (System.DateTime.UtcNow.AddMinutes 15.0)
-        let result = determineWhatToDo events start finish
+        let desiredRange = {
+            start = now
+            finish = now.AddMinutes 15.0
+        }
+
+        let result = timeRangeIntersects existingEventRange.range desiredRange
+        result |> should equal true
+        let result = determineWhatToDo events desiredRange
         result |> should equal (Nothing "busy")
         ()
 
     [<Fact>]
     let ``merges adjacent roommate reservations``() =
-
-        let event = buildGoogleEvent (System.DateTime.UtcNow.AddMinutes -3.0) (System.DateTime.UtcNow.AddMinutes 12.0)
-        event.Id <- "12345"
+        let now = System.DateTime.UtcNow
+        let event = {range={start=now.AddMinutes -3.0;finish= now.AddMinutes 12.0};gcalId="123";isRoommateEvent=true}
         let events = [event]
 
-        let start = System.DateTime.UtcNow.AddMinutes 12.0
-        let finish = System.DateTime.UtcNow.AddMinutes 27.0
+        let desiredRange = {
+            start = now.AddMinutes 12.0
+            finish = now.AddMinutes 27.0
+        }
 
-        let result = determineWhatToDo events start finish
+        let result = determineWhatToDo events desiredRange
 
-        let newStart = System.DateTime.UtcNow.AddMinutes -3.0
-        let newEnd = finish
+        let newStart = now.AddMinutes -3.0
+        let newEnd = desiredRange.finish
 
-        result |> should equal (UpdateEvent ("12345",newStart,newEnd))
+        let (UpdateEvent (resultCalid,resultStart,resultEnd)) = result
+        resultCalid |> should equal "123"
+        resultStart |> should (equalWithin (System.TimeSpan.FromSeconds 1.0)) newStart
+        resultEnd |> should (equalWithin (System.TimeSpan.FromSeconds 1.0)) newEnd
         ()
 
+    [<Fact>]
+    let ``detects when TimeRanges partially intersect``() =
+        let now = System.DateTime.UtcNow
+        let range1 = {start = now.AddHours -3.0; finish =now.AddHours -1.0}
+        let range2 = {start = now.AddHours -2.0;finish = now.AddHours 1.0}
+        timeRangeIntersects range1 range2 |> should equal true
+        ()
+
+    [<Fact>]
+    let ``detects intersection when TimeRange covers another``() =
+        let now = System.DateTime.UtcNow
+        let range1 = {start=now.AddHours -3.0;finish=now.AddHours 3.0}
+        let range2 = {start=now.AddHours -2.0;finish=now.AddHours 1.0}
+        timeRangeIntersects range1 range2 |> should equal true
+        ()
+
+    [<Fact>]
+    let ``detects when TimeRanges don't intersect``() =
+        let now = System.DateTime.UtcNow
+        let range1 = {start=now.AddHours -3.0;finish=now.AddHours -1.0}
+        let range2 = {start=now.AddHours 2.0;finish=now.AddHours 5.0}
+        timeRangeIntersects range1 range2 |> should equal false
