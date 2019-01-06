@@ -80,6 +80,16 @@ module CalendarWatcher =
         | ["2_start";"1_start";"1_end";"2_end"] -> true
         |_ -> failwith "unhandled time range sequence"
 
+    let transformEvent (event:Google.Apis.Calendar.v3.Data.Event) : RoommateEvent =
+        {
+            range = {
+                start = event.Start.DateTime.Value
+                finish = event.End.DateTime.Value
+            }
+            gcalId=event.Id
+            isRoommateEvent = isRoommateEvent event
+        }
+
     let determineWhatToDo (events:RoommateEvent list) (desiredTimeRange:TimeRange) =
         let adjacentEvent = events |> Seq.tryFind (fun e -> (e.range.finish - desiredTimeRange.start) < System.TimeSpan.FromMinutes 1.0)
         if desiredTimeRange.start > desiredTimeRange.finish then
@@ -95,23 +105,13 @@ module CalendarWatcher =
         else
             CreateEvent desiredTimeRange
 
-    let transformEvent (event:Google.Apis.Calendar.v3.Data.Event) : RoommateEvent =
-        {
-            range = {
-                start = event.Start.DateTime.Value
-                finish = event.End.DateTime.Value
-            }
-            gcalId=event.Id
-            isRoommateEvent = isRoommateEvent event
-        }
-
     let createCalendarEvent logFn (config:LambdaConfiguration) (startTime:DateTime) (endTime:DateTime) (calId:LongCalId) =
         let desiredTimeRange = {start=startTime;finish=endTime}
-        let (LongCalId s) = calId
+        let (LongCalId calIdString) = calId
         calId |> (fun calId ->
             match RoommateConfig.tryLookupCalById config.roommateConfig calId with
             | Some room -> Ok room
-            | None -> s |> sprintf "Calendar %s is not in my list!" |> Error )
+            | None -> calIdString |> sprintf "Calendar %s is not in my list!" |> Error )
         |> Result.map (fun room ->
                 sprintf "Calendar ID %s" room.name |> logFn
                 let calendarService = serviceAccountSignIn config.serviceAccountEmail config.serviceAccountPrivKey config.serviceAccountAppName |> Async.RunSynchronously
@@ -120,10 +120,10 @@ module CalendarWatcher =
                 let action = determineWhatToDo events desiredTimeRange
                 let result = match action with
                                 | CreateEvent r -> createEvent calendarService config.roommateConfig.myCalendar room.calendarId r.start r.finish |> Async.RunSynchronously
-                                | UpdateEvent (calid,start,finish) -> failwith "todo: update event"
+                                | UpdateEvent (eventId,start,finish) -> editEventLengths calendarService calIdString eventId start finish |> Async.RunSynchronously
                                 | _ -> failwith "unimplemented"
 
-                sprintf "create result: %s" (serializeIndented result) |> logFn
+                sprintf "result event: %s" (serializeIndented result) |> logFn
                 )
 
     let iso8601datez (dt:DateTime) =

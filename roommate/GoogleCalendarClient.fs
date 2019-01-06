@@ -71,9 +71,19 @@ module GoogleCalendarClient =
             return! request.ExecuteAsync() |> Async.AwaitTask
         }
 
-    let editEvent (calendarService:CalendarService) =
-//        calendarService.Events.Update()
-        ()
+    let editEvent (calendarService:CalendarService) calId event =
+        async {
+            let req = calendarService.Events.Update(event,calId,event.Id)
+            return! req.ExecuteAsync() |> Async.AwaitTask
+        }
+
+    let editEventLengths (calendarService:CalendarService) calId eventId (start:DateTime) (finish:DateTime) =
+        async {
+            let! e = calendarService.Events.Get(calId,eventId).ExecuteAsync() |> Async.AwaitTask
+            e.Start.DateTime <- System.Nullable start
+            e.End.DateTime <- System.Nullable finish
+            return! editEvent calendarService calId e
+        }
 
     let fetchRoommateEventsForRoom (calendarService:CalendarService) (LongCalId calendarId) =
         async {
@@ -126,11 +136,12 @@ module GoogleCalendarClient =
             |> Seq.iter (fun e ->
                 let start = e.Start.DateTime |> Option.ofNullable |> someOrBust
                 let fin = e.End.DateTime |> Option.ofNullable |> someOrBust
-                logFn (sprintf "%s\t%s-%s\t%s\t%s" (start.ToString("MM/dd"))
+                logFn (sprintf "%s\t%s-%s\t%s\t%s id=%s" (start.ToString("MM/dd"))
                                                (start |> hoursMinutes)
                                                (fin |> hoursMinutes)
                                                e.Summary
                                                (if isRoommateEvent e then "(R)" else "")
+                                               e.Id
                                                )
                 )
 

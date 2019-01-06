@@ -29,6 +29,7 @@ type CLIArguments =
     | Unsubscribe_Webhook of calendar:string * resourceId:string * endpoint:string
     | Subscribe_All_Webhooks of endpoint:string
     | Create_Event of attendee:string
+    | Update_Event of eventId:string
     | Lookup_CalId of search:string
     | Mqtt_Publish of topic:string * message:string
 
@@ -45,6 +46,7 @@ with
             | Unsubscribe_Webhook _ -> "unsubscribe to webhook for calendar x and endpoint y"
             | Subscribe_All_Webhooks _ -> "subscribe to webhook for all configured calendars to given endpoint"
             | Create_Event _ -> "create event on calendar (by name substring)"
+            | Update_Event _ -> "update event (extend it by 15min)"
             | Mqtt_Publish _ -> "publish message to MQTT topic"
 
 
@@ -174,6 +176,21 @@ let main argv =
             printfn "created:"
             printfn ""
             printfn "%s" (summarizeEvent result)
+
+        if results.Contains Update_Event then
+            let eventId = results.GetResult Update_Event
+
+            let calId = (LongCalId config.myCalendar)
+
+            let roommateEvents = GoogleCalendarClient.fetchEvents calendarService calId |> Async.RunSynchronously
+            let event = roommateEvents.Items |> Seq.find (fun e -> e.Id = eventId)
+            printfn "found event to extend: %s" (event.ToString())
+
+            event.End.DateTime <- System.Nullable (event.End.DateTime.Value.AddMinutes 15.0)
+            let result = (GoogleCalendarClient.editEvent calendarService config.myCalendar event) |> Async.RunSynchronously
+
+            ()
+
 
         if results.Contains Lookup_CalId then
             results.GetResult Lookup_CalId
