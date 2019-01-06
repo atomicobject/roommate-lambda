@@ -9,6 +9,8 @@ module roommate.AwsIotClient
         let client = new AmazonIotDataClient("https://" + endpoint)
         let req = new Model.PublishRequest(
                                 Topic = topic,
-                                Payload = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(message)))
+                                Payload = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(message)),
+                                Qos = 1 // QoS 1 means wait for ack or timeout
+                                )
         client.PublishAsync(req) |> Async.AwaitTask |> Async.RunSynchronously
 

@@ -2,6 +2,8 @@ namespace Roommate
 
 module GoogleCalendarClient =
 
+    open System
+    open System
     open Google.Apis.Auth.OAuth2
     open Google.Apis.Auth.OAuth2.Flows
     open Google.Apis.Calendar.v3;
@@ -54,10 +56,10 @@ module GoogleCalendarClient =
                 |> Seq.map (fun item -> {calId=LongCalId item.Id;name=item.Summary})
         }
 
-    let createEvent (calendarService:CalendarService) calendarId (LongCalId attendee) =
+    let createEvent (calendarService:CalendarService) calendarId (LongCalId attendee) start finish =
         async {
-            let start = new EventDateTime(DateTime = System.Nullable (System.DateTime.Now.AddHours(12.0)))
-            let finish = new EventDateTime(DateTime = System.Nullable (System.DateTime.Now.AddHours(12.0).AddMinutes(15.0)))
+            let start = new EventDateTime(DateTime = System.Nullable start)
+            let finish = new EventDateTime(DateTime = System.Nullable finish)
 
             let room = new EventAttendee(Email = attendee)
             let event = new Event(
@@ -69,6 +71,39 @@ module GoogleCalendarClient =
                             )
             let request = calendarService.Events.Insert(event, calendarId)
             return! request.ExecuteAsync() |> Async.AwaitTask
+        }
+
+    let editEvent (calendarService:CalendarService) calId event =
+        async {
+            let req = calendarService.Events.Update(event,calId,event.Id)
+            return! req.ExecuteAsync() |> Async.AwaitTask
+        }
+
+    let approxEqual (a:DateTime) (b:DateTime) =
+        (a - b).Duration() < TimeSpan.FromMinutes(1.0)
+
+    let containsAttendee (e:Event) roommateCalId =
+        printfn "event attendees:"
+        e.Attendees |> Seq.map (fun a -> a.Email) |> Seq.reduce (sprintf "%s,%s") |> printfn "%s"
+        e.Attendees |> Seq.tryFind(fun a -> a.Email = roommateCalId) |> (fun x -> x.IsSome)
+
+    let editAssociatedEventLength (calendarService:CalendarService) roommateCalId roomCalId eventId (start:DateTime) (finish:DateTime) =
+        async {
+            let! roomEvent = calendarService.Events.Get(roomCalId,eventId).ExecuteAsync() |> Async.AwaitTask
+            let roommateEventReq = calendarService.Events.List(roommateCalId)
+            roommateEventReq.TimeMin <- (roomEvent.Start.DateTime)
+            roommateEventReq.MaxResults <- Nullable 50
+            let! roommateEvents = roommateEventReq.ExecuteAsync() |> Async.AwaitTask
+
+//            printfn "looking for attendee %s" roomCalId
+            let eventsWithAttendee= roommateEvents.Items |> Seq.where (fun e -> containsAttendee e roomCalId)
+            printfn "found %d events with attendee" (eventsWithAttendee |> Seq.length)
+            let roommateEvent = eventsWithAttendee |> Seq.find (fun e -> (approxEqual e.Start.DateTime.Value roomEvent.Start.DateTime.Value) && (approxEqual e.End.DateTime.Value roomEvent.End.DateTime.Value))
+            printfn "found the event! %s" (roommateEvent.ToString())
+
+            roommateEvent.Start.DateTime <- System.Nullable start
+            roommateEvent.End.DateTime <- System.Nullable finish
+            return! editEvent calendarService roommateCalId roommateEvent
         }
 
     let fetchEvents (calendarService:CalendarService) (LongCalId calendarId) =
@@ -83,6 +118,9 @@ module GoogleCalendarClient =
             return! request.ExecuteAsync() |> Async.AwaitTask
         }
 
+    let isRoommateEvent (event:Event) =
+        event.Creator.Email.StartsWith("roommate") && event.Creator.Email.EndsWith(".gserviceaccount.com")
+
     let logEvents (logFn: string -> unit) (events:Events) =
         logFn (sprintf "\n==== %s %s ====" events.Summary events.Description)
 
@@ -96,10 +134,21 @@ module GoogleCalendarClient =
                 | Some opt -> opt
 
         events.Items
-            |> Seq.map (fun e -> e.Start.DateTime |> Option.ofNullable,e.End.DateTime |> Option.ofNullable,e.Summary)
-            |> Seq.filter (fun (a,b,_) -> a.IsSome && b.IsSome)
-            |> Seq.map (fun (a,b,name) -> a |> someOrBust |>(fun d -> d.Date) ,a |> someOrBust |> hoursMinutes, b |> someOrBust |> hoursMinutes, name)
-            |> Seq.iter (fun (d,a,b,name) -> logFn (sprintf "%s\t%s-%s\t%s" (d.ToString("MM/dd")) a b name))
+            |> Seq.filter (fun e ->
+                                e.Start.DateTime |> Option.ofNullable |> Option.isSome
+                                    && e.End.DateTime |> Option.ofNullable |> Option.isSome )
+            |> Seq.iter (fun e ->
+                let start = e.Start.DateTime |> Option.ofNullable |> someOrBust
+                let fin = e.End.DateTime |> Option.ofNullable |> someOrBust
+                logFn (sprintf "%s\t%s-%s\t%s\t%s id=%s" (start.ToString("MM/dd"))
+                                               (start |> hoursMinutes)
+                                               (fin |> hoursMinutes)
+                                               e.Summary
+                                               (if isRoommateEvent e then "(R)" else "")
+                                               e.Id
+                                               )
+//                logFn (sprintf "%s" (serializeIndented e))
+                )
 
     let activateWebhook (calendarService:CalendarService) (LongCalId calendarId) url =
         async {

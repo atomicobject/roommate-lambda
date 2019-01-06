@@ -64,7 +64,7 @@ type Functions() =
                 | None -> Error  "No headers."
                 | Some h -> Ok h
             |> Result.bind (calendarIdFromPushNotification logFn config)
-            |> Result.bind (processCalendarId logFn config)
+            |> Result.bind (fetchEventsForCalendar logFn config)
             |> Result.bind (mapEventsToMessage)
             |> Result.bind (determineTopicsToPublishTo logFn config.roommateConfig)
             |> Result.bind (sendMessageToTopics logFn config.mqttEndpoint)
@@ -96,10 +96,38 @@ type Functions() =
                         |> function
                             | None -> Error  "Unknown board"
                             | Some calId -> Ok calId
-                        |> Result.bind (processCalendarId logFn config)
+                        |> Result.bind (fetchEventsForCalendar logFn config)
                         |> Result.bind (mapEventsToMessage)
                         |> Result.bind (determineTopicsToPublishTo logFn config.roommateConfig)
                         |> Result.bind (sendMessageToTopics logFn config.mqttEndpoint)
+                        |> function
+                            | Error e -> logFn e
+                            | _ -> ()
+        ()
+
+    member __.ReservationRequest (request: Messages.ReservationRequest) (context: ILambdaContext) =
+        let dateTimeFromUnixTime =
+            int64 >> System.DateTimeOffset.FromUnixTimeSeconds >> (fun x -> x.UtcDateTime)
+        let startTime = request.start |> dateTimeFromUnixTime
+        let endTime   = request.finish |> dateTimeFromUnixTime
+
+        sprintf "Reservation requested for boardId %s: %s -> %s" (request.boardId) (startTime.ToString()) (endTime.ToString()) |> context.Logger.LogLine
+
+        let config : LambdaConfiguration = {
+            roommateConfig = readSecretFromEnv "roommateConfig" |> RoommateConfig.deserializeConfig
+            serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
+            serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
+            serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
+            mqttEndpoint = readSecretFromEnv "mqttEndpoint"
+        }
+
+        let logFn = context.Logger.LogLine
+
+        request.boardId |> lookupCalendarForBoard config.roommateConfig
+                        |> function
+                            | None -> Error  "Unknown board"
+                            | Some calId -> Ok calId
+                        |> Result.bind (createCalendarEvent logFn config startTime endTime)
                         |> function
                             | Error e -> logFn e
                             | _ -> ()

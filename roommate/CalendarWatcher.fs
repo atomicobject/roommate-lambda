@@ -34,7 +34,7 @@ module CalendarWatcher =
                             | Some resourceId -> Ok resourceId)
         |> Result.map calIdFromURI
 
-    let processCalendarId logFn (config:LambdaConfiguration) calId =
+    let fetchEventsForCalendar logFn (config:LambdaConfiguration) calId =
         let (LongCalId s) = calId
         calId |> (fun calId ->
             match RoommateConfig.tryLookupCalById config.roommateConfig calId with
@@ -51,9 +51,101 @@ module CalendarWatcher =
                 room.calendarId,events
                 )
 
+    type TimeRange = {
+        start : DateTime
+        finish : DateTime
+    }
+
+    type RoommateEvent = {
+        range : TimeRange
+        gcalId : string
+        isRoommateEvent : bool
+    }
+
+    type CalendarCreateAction =
+        | CreateEvent of TimeRange
+        | UpdateEvent of string * DateTime * DateTime
+        | Nothing of string
+
+    let timeRangeIntersects (r1:TimeRange) (r2:TimeRange) =
+        let times = [ "1_start",r1.start;"1_end",r1.finish;"2_start",r2.start;"2_end",r2.finish]
+        let sequence = times |> List.sortBy snd
+        let sortedNames = sequence |> List.map fst
+        match sortedNames with
+        | ["1_start";"1_end";"2_start";"2_end"] -> false
+        | ["2_start";"2_end";"1_start";"1_end"] -> false
+        | ["1_start";"2_start";"1_end";"2_end"] -> true
+        | ["2_start";"1_start";"2_end";"1_end"] -> true
+        | ["1_start";"2_start";"2_end";"1_end"] -> true
+        | ["2_start";"1_start";"1_end";"2_end"] -> true
+        |_ -> failwith "unhandled time range sequence"
+
+    let transformEvent (event:Google.Apis.Calendar.v3.Data.Event) : RoommateEvent =
+        {
+            range = {
+                start = event.Start.DateTime.Value
+                finish = event.End.DateTime.Value
+            }
+            gcalId=event.Id
+            isRoommateEvent = isRoommateEvent event
+        }
+
+    let determineWhatToDo (events:RoommateEvent list) (desiredTimeRange:TimeRange) =
+        let roommateEvents = events |> Seq.where (fun e -> e.isRoommateEvent)
+
+        printfn "found %d roommate events." (roommateEvents |> Seq.length)
+
+        let adjacentEvent = roommateEvents |> Seq.tryFind (fun e ->
+            printfn "checking event %s %s" (e.range.start.ToString("o")) (e.range.finish.ToString("o"))
+            let distance = (e.range.finish - desiredTimeRange.start).Duration()
+            printfn "it seems to be %s away from %s" (distance.ToString()) (desiredTimeRange.start.ToString("o"))
+            distance < System.TimeSpan.FromMinutes 2.0
+            )
+
+        if desiredTimeRange.start > desiredTimeRange.finish then
+            (Nothing "invalid event")
+        else if desiredTimeRange.finish < System.DateTime.UtcNow then
+            (Nothing "cannot create historic event")
+        else if desiredTimeRange.start > (System.DateTime.UtcNow.AddHours 3.0) then
+            (Nothing "cannot create event >3 hours in the future")
+        else if adjacentEvent.IsSome then
+            printfn "found adjacent event %s-%s" (adjacentEvent.Value.range.start.ToString()) (adjacentEvent.Value.range.finish.ToString())
+            (UpdateEvent (adjacentEvent.Value.gcalId,adjacentEvent.Value.range.start,desiredTimeRange.finish))
+        else if (events |> List.tryFind (fun e -> timeRangeIntersects e.range desiredTimeRange)).IsSome then
+            (Nothing "busy")
+        else
+            CreateEvent desiredTimeRange
+
+    let createCalendarEvent logFn (config:LambdaConfiguration) (startTime:DateTime) (endTime:DateTime) (calId:LongCalId) =
+        let desiredTimeRange = {start=startTime;finish=endTime}
+        let (LongCalId calIdString) = calId
+        calId |> (fun calId ->
+            match RoommateConfig.tryLookupCalById config.roommateConfig calId with
+            | Some room -> Ok room
+            | None -> calIdString |> sprintf "Calendar %s is not in my list!" |> Error )
+        |> Result.map (fun room ->
+                sprintf "Calendar ID %s" room.name |> logFn
+                let calendarService = serviceAccountSignIn config.serviceAccountEmail config.serviceAccountPrivKey config.serviceAccountAppName |> Async.RunSynchronously
+
+                let googleEvents = (fetchEvents calendarService room.calendarId |> Async.RunSynchronously)
+
+                googleEvents |> logEvents (printfn "%s")
+
+                let events = googleEvents.Items |> List.ofSeq |> List.map transformEvent
+                printfn "requested time range %s %s" (startTime.ToString("o")) (endTime.ToString("o"))
+
+                let action = determineWhatToDo events desiredTimeRange
+                let result = match action with
+                                | CreateEvent r -> createEvent calendarService config.roommateConfig.myCalendar room.calendarId r.start r.finish |> Async.RunSynchronously
+                                | UpdateEvent (eventId,start,finish) -> editAssociatedEventLength calendarService config.roommateConfig.myCalendar calIdString eventId start finish |> Async.RunSynchronously
+                                | Nothing s -> failwith ("createCalendarEvent rejection: "+s)
+
+                sprintf "result event: %s" (serializeIndented result) |> logFn
+                )
+
     let iso8601datez (dt:DateTime) =
         // https://stackoverflow.com/a/115034
-        dt.ToString("s", System.Globalization.CultureInfo.InvariantCulture) + "z"
+        dt.ToString("s", System.Globalization.CultureInfo.InvariantCulture) + "Z"
 
     let maybeDateTimeString (ndt:Google.Apis.Calendar.v3.Data.EventDateTime) =
         ndt.DateTime |> Option.ofNullable
@@ -65,9 +157,8 @@ module CalendarWatcher =
         // todo: unit test
         let msg : Messages.CalendarUpdate = {
             time = iso8601datez DateTime.UtcNow
-            // todo: handle all-day events?
             events = events.Items
-                         |> Seq.map(fun e -> ({s=maybeDateTimeString e.Start;e=maybeDateTimeString e.End}:Messages.CalendarEvent))
+                         |> Seq.map(fun e -> ({s=maybeDateTimeString e.Start;e=maybeDateTimeString e.End;r=isRoommateEvent e}:Messages.CalendarEvent))
                          |> List.ofSeq
         }
         Ok (calendarId,msg)
