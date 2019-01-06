@@ -91,7 +91,7 @@ module CalendarWatcher =
         }
 
     let determineWhatToDo (events:RoommateEvent list) (desiredTimeRange:TimeRange) =
-        let adjacentEvent = events |> Seq.tryFind (fun e -> (e.range.finish - desiredTimeRange.start).Duration() < System.TimeSpan.FromMinutes 2.0)
+        let adjacentEvent = events |> Seq.where (fun e -> e.isRoommateEvent) |> Seq.tryFind (fun e -> (e.range.finish - desiredTimeRange.start).Duration() < System.TimeSpan.FromMinutes 2.0)
 
         if desiredTimeRange.start > desiredTimeRange.finish then
             (Nothing "invalid event")
@@ -118,7 +118,13 @@ module CalendarWatcher =
                 sprintf "Calendar ID %s" room.name |> logFn
                 let calendarService = serviceAccountSignIn config.serviceAccountEmail config.serviceAccountPrivKey config.serviceAccountAppName |> Async.RunSynchronously
 
-                let events = (fetchEvents calendarService room.calendarId |> Async.RunSynchronously).Items |> List.ofSeq |> List.map transformEvent
+                let googleEvents = (fetchEvents calendarService room.calendarId |> Async.RunSynchronously)
+
+                googleEvents |> logEvents (printfn "%s")
+
+                let events = googleEvents.Items |> List.ofSeq |> List.map transformEvent
+                printfn "requested time range %s %s" (startTime.ToString("o")) (endTime.ToString("o"))
+
                 let action = determineWhatToDo events desiredTimeRange
                 let result = match action with
                                 | CreateEvent r -> createEvent calendarService config.roommateConfig.myCalendar room.calendarId r.start r.finish |> Async.RunSynchronously
