@@ -3,6 +3,7 @@ namespace Roommate
 module GoogleCalendarClient =
 
     open System
+    open System
     open Google.Apis.Auth.OAuth2
     open Google.Apis.Auth.OAuth2.Flows
     open Google.Apis.Calendar.v3;
@@ -78,6 +79,9 @@ module GoogleCalendarClient =
             return! req.ExecuteAsync() |> Async.AwaitTask
         }
 
+    let approxEqual (a:DateTime) (b:DateTime) =
+        (a - b).Duration() < TimeSpan.FromMinutes(1.0)
+
     let containsAttendee (e:Event) roommateCalId =
         printfn "event attendees:"
         e.Attendees |> Seq.map (fun a -> a.Email) |> Seq.reduce (sprintf "%s,%s") |> printfn "%s"
@@ -91,8 +95,11 @@ module GoogleCalendarClient =
             roommateEventReq.MaxResults <- Nullable 50
             let! roommateEvents = roommateEventReq.ExecuteAsync() |> Async.AwaitTask
 
-            printfn "looking for attendee %s" roomCalId
-            let roommateEvent = roommateEvents.Items |> Seq.find (fun e -> containsAttendee e roomCalId && e.Start = roomEvent.Start && e.End = roomEvent.End)
+//            printfn "looking for attendee %s" roomCalId
+            let eventsWithAttendee= roommateEvents.Items |> Seq.where (fun e -> containsAttendee e roomCalId)
+            printfn "found %d events with attendee" (eventsWithAttendee |> Seq.length)
+            let roommateEvent = eventsWithAttendee |> Seq.find (fun e -> (approxEqual e.Start.DateTime.Value roomEvent.Start.DateTime.Value) && (approxEqual e.End.DateTime.Value roomEvent.End.DateTime.Value))
+            printfn "found the event! %s" (roommateEvent.ToString())
 
             roommateEvent.Start.DateTime <- System.Nullable start
             roommateEvent.End.DateTime <- System.Nullable finish
