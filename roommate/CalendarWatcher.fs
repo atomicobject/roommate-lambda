@@ -92,16 +92,18 @@ module CalendarWatcher =
 
     let determineWhatToDo (events:RoommateEvent list) (desiredTimeRange:TimeRange) =
         let adjacentEvent = events |> Seq.tryFind (fun e -> (e.range.finish - desiredTimeRange.start).Duration() < System.TimeSpan.FromMinutes 2.0)
+
         if desiredTimeRange.start > desiredTimeRange.finish then
             (Nothing "invalid event")
         else if desiredTimeRange.finish < System.DateTime.UtcNow then
             (Nothing "cannot create historic event")
         else if desiredTimeRange.start > (System.DateTime.UtcNow.AddHours 3.0) then
             (Nothing "cannot create event >3 hours in the future")
+        else if adjacentEvent.IsSome then
+            printfn "found adjacent event %s-%s" (adjacentEvent.Value.range.start.ToString()) (adjacentEvent.Value.range.finish.ToString())
+            (UpdateEvent (adjacentEvent.Value.gcalId,adjacentEvent.Value.range.start,desiredTimeRange.finish))
         else if (events |> List.tryFind (fun e -> timeRangeIntersects e.range desiredTimeRange)).IsSome then
             (Nothing "busy")
-        else if adjacentEvent.IsSome then
-            (UpdateEvent (adjacentEvent.Value.gcalId,adjacentEvent.Value.range.start,desiredTimeRange.finish))
         else
             CreateEvent desiredTimeRange
 
