@@ -79,6 +79,8 @@ module GoogleCalendarClient =
         }
 
     let containsAttendee (e:Event) roommateCalId =
+        printfn "event attendees:"
+        e.Attendees |> Seq.map (fun a -> a.Email) |> Seq.reduce (sprintf "%s,%s") |> printfn "%s"
         e.Attendees |> Seq.tryFind(fun a -> a.Email = roommateCalId) |> (fun x -> x.IsSome)
 
     let editAssociatedEventLength (calendarService:CalendarService) roommateCalId roomCalId eventId (start:DateTime) (finish:DateTime) =
@@ -89,6 +91,7 @@ module GoogleCalendarClient =
             roommateEventReq.MaxResults <- Nullable 50
             let! roommateEvents = roommateEventReq.ExecuteAsync() |> Async.AwaitTask
 
+            printfn "looking for attendee %s" roommateCalId
             let roommateEvent = roommateEvents.Items |> Seq.find (fun e -> containsAttendee e roommateCalId && e.Start = roomEvent.Start && e.End = roomEvent.End)
 
             roommateEvent.Start.DateTime <- System.Nullable start
