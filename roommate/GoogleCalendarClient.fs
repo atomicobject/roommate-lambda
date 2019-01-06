@@ -91,8 +91,8 @@ module GoogleCalendarClient =
             roommateEventReq.MaxResults <- Nullable 50
             let! roommateEvents = roommateEventReq.ExecuteAsync() |> Async.AwaitTask
 
-            printfn "looking for attendee %s" roommateCalId
-            let roommateEvent = roommateEvents.Items |> Seq.find (fun e -> containsAttendee e roommateCalId && e.Start = roomEvent.Start && e.End = roomEvent.End)
+            printfn "looking for attendee %s" roomCalId
+            let roommateEvent = roommateEvents.Items |> Seq.find (fun e -> containsAttendee e roomCalId && e.Start = roomEvent.Start && e.End = roomEvent.End)
 
             roommateEvent.Start.DateTime <- System.Nullable start
             roommateEvent.End.DateTime <- System.Nullable finish
