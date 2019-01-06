@@ -121,7 +121,7 @@ module CalendarWatcher =
                 let result = match action with
                                 | CreateEvent r -> createEvent calendarService config.roommateConfig.myCalendar room.calendarId r.start r.finish |> Async.RunSynchronously
                                 | UpdateEvent (eventId,start,finish) -> editEventLengths calendarService calIdString eventId start finish |> Async.RunSynchronously
-                                | _ -> failwith "unimplemented"
+                                | Nothing s -> failwith ("createCalendarEvent rejection: "+s)
 
                 sprintf "result event: %s" (serializeIndented result) |> logFn
                 )
