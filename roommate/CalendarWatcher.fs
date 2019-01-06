@@ -91,7 +91,7 @@ module CalendarWatcher =
         }
 
     let determineWhatToDo (events:RoommateEvent list) (desiredTimeRange:TimeRange) =
-        let adjacentEvent = events |> Seq.tryFind (fun e -> (e.range.finish - desiredTimeRange.start).Duration() < System.TimeSpan.FromMinutes 1.0)
+        let adjacentEvent = events |> Seq.tryFind (fun e -> (e.range.finish - desiredTimeRange.start).Duration() < System.TimeSpan.FromMinutes 2.0)
         if desiredTimeRange.start > desiredTimeRange.finish then
             (Nothing "invalid event")
         else if desiredTimeRange.finish < System.DateTime.UtcNow then
