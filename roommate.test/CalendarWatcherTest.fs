@@ -77,7 +77,6 @@ module CalendarWatcherTest =
             gcalId = "123"
             isRoommateEvent = false
         }
-//        let event = buildGoogleEvent
         let events = [existingEventRange]
 
         let desiredRange = {

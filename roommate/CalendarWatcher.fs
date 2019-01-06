@@ -157,7 +157,6 @@ module CalendarWatcher =
         // todo: unit test
         let msg : Messages.CalendarUpdate = {
             time = iso8601datez DateTime.UtcNow
-            // todo: handle all-day events?
             events = events.Items
                          |> Seq.map(fun e -> ({s=maybeDateTimeString e.Start;e=maybeDateTimeString e.End;r=isRoommateEvent e}:Messages.CalendarEvent))
                          |> List.ofSeq
