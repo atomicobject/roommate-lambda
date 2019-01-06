@@ -78,6 +78,9 @@ module GoogleCalendarClient =
             return! req.ExecuteAsync() |> Async.AwaitTask
         }
 
+    let containsAttendee (e:Event) roommateCalId =
+        e.Attendees |> Seq.tryFind(fun a -> a.Email = roommateCalId) |> (fun x -> x.IsSome)
+
     let editAssociatedEventLength (calendarService:CalendarService) roommateCalId roomCalId eventId (start:DateTime) (finish:DateTime) =
         async {
             let! roomEvent = calendarService.Events.Get(roomCalId,eventId).ExecuteAsync() |> Async.AwaitTask
@@ -86,8 +89,7 @@ module GoogleCalendarClient =
             roommateEventReq.MaxResults <- Nullable 50
             let! roommateEvents = roommateEventReq.ExecuteAsync() |> Async.AwaitTask
 
-            let attendee = new Google.Apis.Calendar.v3.Data.EventAttendee()
-            let roommateEvent = roommateEvents.Items |> Seq.find (fun e -> e.Attendees.Contains(attendee) && e.Start = roomEvent.Start && e.End = roomEvent.End)
+            let roommateEvent = roommateEvents.Items |> Seq.find (fun e -> containsAttendee e roommateCalId && e.Start = roomEvent.Start && e.End = roomEvent.End)
 
             roommateEvent.Start.DateTime <- System.Nullable start
             roommateEvent.End.DateTime <- System.Nullable finish
@@ -152,7 +154,7 @@ module GoogleCalendarClient =
                                                (if isRoommateEvent e then "(R)" else "")
                                                e.Id
                                                )
-                logFn (sprintf "%s" (serializeIndented e))
+//                logFn (sprintf "%s" (serializeIndented e))
                 )
 
     let activateWebhook (calendarService:CalendarService) (LongCalId calendarId) url =
