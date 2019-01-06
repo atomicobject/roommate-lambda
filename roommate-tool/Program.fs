@@ -8,7 +8,9 @@ open System.Globalization
 open SecretReader
 open GoogleCalendarClient
 open Roommate.RoommateConfig
-open roommate
+open FakeBoard
+open Roommate
+open Roommate
 
  (*
      todo
@@ -32,6 +34,8 @@ type CLIArguments =
     | Update_Event of eventId:string
     | Lookup_CalId of search:string
     | Mqtt_Publish of topic:string * message:string
+    | Fake_Board of room:string
+    | Push_Button of room:string
 
 with
     interface IArgParserTemplate with
@@ -48,6 +52,8 @@ with
             | Create_Event _ -> "create event on calendar (by name substring)"
             | Update_Event _ -> "update event (extend it by 15min)"
             | Mqtt_Publish _ -> "publish message to MQTT topic"
+            | Fake_Board _ -> "simulate board state for given room"
+            | Push_Button _ -> "simulate pushing button on board assigned to given room (request a reservation)"
 
 
 let CONFIG_FILENAME = "roommate.json"
@@ -191,12 +197,51 @@ let main argv =
 
             ()
 
-
         if results.Contains Lookup_CalId then
             results.GetResult Lookup_CalId
             |> RoommateConfig.looukpCalByName config
             |> fun mr -> mr.name,mr.calendarId
             |> fun (name,LongCalId calId) -> printfn "%s\n%s" name calId
+            ()
+
+        if results.Contains Fake_Board then
+            let attendeeNameSubstring = results.GetResult Fake_Board
+            let roomToInvite = RoommateConfig.looukpCalByName config attendeeNameSubstring
+            printfn "using room %s" roomToInvite.name
+            printfn ""
+            let events = GoogleCalendarClient.fetchEvents calendarService roomToInvite.calendarId |> Async.RunSynchronously
+            let events = GoogleCalendarClient.fetchEvents calendarService roomToInvite.calendarId |> Async.RunSynchronously
+            let roommateEvents = events.Items |> Seq.map CalendarWatcher.transformEvent |> List.ofSeq
+            let lights = getLights roommateEvents
+            let start = DateTime.Now |> roundDown
+            let finish = start.AddHours 2.0
+
+            let startTime = sprintf "%d:%d" start.Hour start.Minute
+            let endTime = sprintf "%d:%d" finish.Hour finish.Minute
+            let ledSeriesLen =(8*2+7*2-1)
+            let spaceLen1 = ledSeriesLen- startTime.Length - endTime.Length
+            printfn "%s%s%s"
+                startTime
+                ([0..spaceLen1] |> List.map (fun _ -> " ") |> List.reduce (+))
+                endTime
+            let spaceLen2 = ledSeriesLen - 2
+            printfn "|%s|" ([0..spaceLen2] |> List.map (fun _ -> " ") |> List.reduce (+))
+
+            lights |> List.iter (fun x -> printLed x;printf "  ")
+            printfn ""
+            printfn ""
+
+
+        if results.Contains Push_Button then
+            let attendeeNameSubstring = results.GetResult Push_Button
+            let roomToInvite = RoommateConfig.looukpCalByName config attendeeNameSubstring
+            let events = GoogleCalendarClient.fetchEvents calendarService roomToInvite.calendarId |> Async.RunSynchronously
+            let roommateEvents = events.Items |> Seq.map CalendarWatcher.transformEvent |> List.ofSeq
+            let lights = getLights roommateEvents
+//            Printf.kprintf ()
+            // let desiredMeetingTime = chooseNextTime lights
+            // let result = publish blah blah blah
+
             ()
 
     0

@@ -9,6 +9,7 @@ module CalendarWatcherTest =
     open Google.Apis.Calendar.v3.Data
     open Google.Apis.Calendar.v3.Data
     open Roommate.CalendarWatcher
+    open Roommate.TimeUtil
 
     [<Fact>]
     let ``parses calendar ID from URI``() =
@@ -113,25 +114,3 @@ module CalendarWatcherTest =
         resultStart |> should (equalWithin (System.TimeSpan.FromSeconds 1.0)) newStart
         resultEnd |> should (equalWithin (System.TimeSpan.FromSeconds 1.0)) newEnd
 
-    [<Fact>]
-    let ``detects when TimeRanges partially intersect``() =
-        let now = System.DateTime.UtcNow
-        let range1 = {start = now.AddHours -3.0; finish =now.AddHours -1.0}
-        let range2 = {start = now.AddHours -2.0;finish = now.AddHours 1.0}
-        timeRangeIntersects range1 range2 |> should equal true
-        ()
-
-    [<Fact>]
-    let ``detects intersection when TimeRange covers another``() =
-        let now = System.DateTime.UtcNow
-        let range1 = {start=now.AddHours -3.0;finish=now.AddHours 3.0}
-        let range2 = {start=now.AddHours -2.0;finish=now.AddHours 1.0}
-        timeRangeIntersects range1 range2 |> should equal true
-        ()
-
-    [<Fact>]
-    let ``detects when TimeRanges don't intersect``() =
-        let now = System.DateTime.UtcNow
-        let range1 = {start=now.AddHours -3.0;finish=now.AddHours -1.0}
-        let range2 = {start=now.AddHours 2.0;finish=now.AddHours 5.0}
-        timeRangeIntersects range1 range2 |> should equal false
