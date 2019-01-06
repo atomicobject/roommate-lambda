@@ -21,4 +21,7 @@ module TimeUtil =
         | ["2_start";"1_start";"1_end";"2_end"] -> true
         |_ -> failwith "unhandled time range sequence"
 
+    let timeRangeContains (r:TimeRange) (d:DateTime) =
+        r.start < d && d < r.finish
+
 

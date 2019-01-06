@@ -210,7 +210,6 @@ let main argv =
             printfn "using room %s" roomToInvite.name
             printfn ""
             let events = GoogleCalendarClient.fetchEvents calendarService roomToInvite.calendarId |> Async.RunSynchronously
-            let events = GoogleCalendarClient.fetchEvents calendarService roomToInvite.calendarId |> Async.RunSynchronously
             let roommateEvents = events.Items |> Seq.map CalendarWatcher.transformEvent |> List.ofSeq
             let lights = getLights roommateEvents
             let start = DateTime.Now |> roundDown
