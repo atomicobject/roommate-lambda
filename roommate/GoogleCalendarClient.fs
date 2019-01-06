@@ -2,6 +2,7 @@ namespace Roommate
 
 module GoogleCalendarClient =
 
+    open System
     open Google.Apis.Auth.OAuth2
     open Google.Apis.Auth.OAuth2.Flows
     open Google.Apis.Calendar.v3;
@@ -77,12 +78,20 @@ module GoogleCalendarClient =
             return! req.ExecuteAsync() |> Async.AwaitTask
         }
 
-    let editEventLengths (calendarService:CalendarService) calId eventId (start:DateTime) (finish:DateTime) =
+    let editAssociatedEventLength (calendarService:CalendarService) roommateCalId roomCalId eventId (start:DateTime) (finish:DateTime) =
         async {
-            let! e = calendarService.Events.Get(calId,eventId).ExecuteAsync() |> Async.AwaitTask
-            e.Start.DateTime <- System.Nullable start
-            e.End.DateTime <- System.Nullable finish
-            return! editEvent calendarService calId e
+            let! roomEvent = calendarService.Events.Get(roomCalId,eventId).ExecuteAsync() |> Async.AwaitTask
+            let roommateEventReq = calendarService.Events.List(roommateCalId)
+            roommateEventReq.TimeMin <- (roomEvent.Start.DateTime)
+            roommateEventReq.MaxResults <- Nullable 50
+            let! roommateEvents = roommateEventReq.ExecuteAsync() |> Async.AwaitTask
+
+            let attendee = new Google.Apis.Calendar.v3.Data.EventAttendee()
+            let roommateEvent = roommateEvents.Items |> Seq.find (fun e -> e.Attendees.Contains(attendee) && e.Start = roomEvent.Start && e.End = roomEvent.End)
+
+            roommateEvent.Start.DateTime <- System.Nullable start
+            roommateEvent.End.DateTime <- System.Nullable finish
+            return! editEvent calendarService roommateCalId roommateEvent
         }
 
     let fetchRoommateEventsForRoom (calendarService:CalendarService) (LongCalId calendarId) =
@@ -143,6 +152,7 @@ module GoogleCalendarClient =
                                                (if isRoommateEvent e then "(R)" else "")
                                                e.Id
                                                )
+                logFn (sprintf "%s" (serializeIndented e))
                 )
 
     let activateWebhook (calendarService:CalendarService) (LongCalId calendarId) url =
