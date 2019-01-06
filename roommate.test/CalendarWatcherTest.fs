@@ -107,11 +107,12 @@ module CalendarWatcherTest =
         let newStart = now.AddMinutes -3.0
         let newEnd = desiredRange.finish
 
-        let (UpdateEvent (resultCalid,resultStart,resultEnd)) = result
+        let (resultCalid,resultStart,resultEnd) = match result with
+                                                    | UpdateEvent (a,b,c) -> (a,b,c)
+                                                    | _ -> failwith "oops"
         resultCalid |> should equal "123"
         resultStart |> should (equalWithin (System.TimeSpan.FromSeconds 1.0)) newStart
         resultEnd |> should (equalWithin (System.TimeSpan.FromSeconds 1.0)) newEnd
-        ()
 
     [<Fact>]
     let ``detects when TimeRanges partially intersect``() =
