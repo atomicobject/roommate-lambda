@@ -236,17 +236,13 @@ let main argv =
             let boardId = RoommateConfig.boardsForCalendar config room.calendarId |> List.head
             desiredMeetingTime
                 |> Option.iter (fun (range,pos) ->
-//                    printfn ""
-//                    printfn "requesting slot #%d" pos
                     printf "\trequesting %d:%d - %d:%d ..\t" range.start.Hour range.start.Minute range.finish.Hour range.finish.Minute
                     let startTime = TimeUtil.unixTimeFromDate range.start
                     let finishTime = TimeUtil.unixTimeFromDate range.finish
                     let message = sprintf "{\"boardId\":\"%s\",\"start\":%d,\"finish\":%d}" boardId startTime finishTime
-//                    printfn "message:\n%s" message
 
                     let mqttEndpoint = readSecretFromEnv "mqttEndpoint"
                     let result = AwsIotClient.publish mqttEndpoint "reservation-request" message
-//                    printfn "result: %s" (result.ToString())
                     printfn "result %s" (result.HttpStatusCode.ToString())
                    )
 

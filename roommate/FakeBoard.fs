@@ -2,7 +2,6 @@ namespace Roommate
 
 module FakeBoard =
     open CalendarWatcher
-    open Google.Apis.Calendar.v3.Data
     open System
     open TimeUtil
 
@@ -51,7 +50,6 @@ module FakeBoard =
         printf "%d:%d  " start.Hour start.Minute
         lights |> List.map fst |> List.iter (fun x -> printLed x;printf "  ")
         printf "%d:%d" finish.Hour finish.Minute
-//        printfn ""
 
     let chooseNextTime (lights:(LightState*TimeRange) list) =
         let numberedLights = lights |> List.mapi (fun i (lightState,timeRange) -> (lightState,timeRange,i))
@@ -61,7 +59,6 @@ module FakeBoard =
             None
         else
             let light,range,pos = maybeLight.Value
-//            printfn "choosing position %d : %s - %s" pos (range.start.ToString()) (range.finish.ToString())
             Some (range,pos)
 
 
