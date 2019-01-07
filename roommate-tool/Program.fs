@@ -205,41 +205,51 @@ let main argv =
             ()
 
         if results.Contains Fake_Board then
-            let attendeeNameSubstring = results.GetResult Fake_Board
-            let roomToInvite = RoommateConfig.looukpCalByName config attendeeNameSubstring
-            printfn "using room %s" roomToInvite.name
-            printfn ""
-            let events = GoogleCalendarClient.fetchEvents calendarService roomToInvite.calendarId |> Async.RunSynchronously
-            let roommateEvents = events.Items |> Seq.map CalendarWatcher.transformEvent |> List.ofSeq
-            let lights = getLights roommateEvents
-            let start = DateTime.Now |> roundDown
-            let finish = start.AddHours 2.0
+            let lights =
+                        results.GetResult Fake_Board
+                        |> RoommateConfig.looukpCalByName config
+                        |> fun room -> printf "%s\t" room.name; room.calendarId
+                        |> GoogleCalendarClient.fetchEvents calendarService
+                        |> Async.RunSynchronously
+                        |> fun x -> x.Items
+                        |> Seq.map CalendarWatcher.transformEvent
+                        |> List.ofSeq
+                        |> getLights
 
-            let startTime = sprintf "%d:%d" start.Hour start.Minute
-            let endTime = sprintf "%d:%d" finish.Hour finish.Minute
-            let ledSeriesLen =(8*2+7*2-1)
-            let spaceLen1 = ledSeriesLen- startTime.Length - endTime.Length
-            printfn "%s%s%s"
-                startTime
-                ([0..spaceLen1] |> List.map (fun _ -> " ") |> List.reduce (+))
-                endTime
-            let spaceLen2 = ledSeriesLen - 2
-            printfn "|%s|" ([0..spaceLen2] |> List.map (fun _ -> " ") |> List.reduce (+))
-
-            lights |> List.iter (fun x -> printLed x;printf "  ")
+            printLights lights
             printfn ""
-            printfn ""
-
 
         if results.Contains Push_Button then
-            let attendeeNameSubstring = results.GetResult Push_Button
-            let roomToInvite = RoommateConfig.looukpCalByName config attendeeNameSubstring
-            let events = GoogleCalendarClient.fetchEvents calendarService roomToInvite.calendarId |> Async.RunSynchronously
-            let roommateEvents = events.Items |> Seq.map CalendarWatcher.transformEvent |> List.ofSeq
-            let lights = getLights roommateEvents
-//            Printf.kprintf ()
-            // let desiredMeetingTime = chooseNextTime lights
-            // let result = publish blah blah blah
+            let room = results.GetResult Push_Button |> RoommateConfig.looukpCalByName config
+            printf "%s\t" room.name
+            let lights = room.calendarId
+                        |> GoogleCalendarClient.fetchEvents calendarService
+                        |> Async.RunSynchronously
+                        |> fun x -> x.Items
+                        |> Seq.map CalendarWatcher.transformEvent
+                        |> List.ofSeq
+                        |> getLights
+
+            printLights lights
+
+            let desiredMeetingTime = chooseNextTime lights
+            let boardId = RoommateConfig.boardsForCalendar config room.calendarId |> List.head
+            desiredMeetingTime
+                |> Option.iter (fun (range,pos) ->
+//                    printfn ""
+//                    printfn "requesting slot #%d" pos
+                    printf "\trequesting %d:%d - %d:%d ..\t" range.start.Hour range.start.Minute range.finish.Hour range.finish.Minute
+                    let startTime = TimeUtil.unixTimeFromDate range.start
+                    let finishTime = TimeUtil.unixTimeFromDate range.finish
+                    let message = sprintf "{\"boardId\":\"%s\",\"start\":%d,\"finish\":%d}" boardId startTime finishTime
+//                    printfn "message:\n%s" message
+
+                    let mqttEndpoint = readSecretFromEnv "mqttEndpoint"
+                    let result = AwsIotClient.publish mqttEndpoint "reservation-request" message
+//                    printfn "result: %s" (result.ToString())
+                    printfn "result %s" (result.HttpStatusCode.ToString())
+                   )
+
 
             ()
 

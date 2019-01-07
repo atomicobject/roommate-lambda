@@ -6,6 +6,7 @@ open Amazon.Lambda.Core
 open Amazon.Lambda.APIGatewayEvents
 
 open Roommate
+open Roommate
 open Roommate.SecretReader
 open Roommate.CalendarWatcher
 
@@ -106,10 +107,8 @@ type Functions() =
         ()
 
     member __.ReservationRequest (request: Messages.ReservationRequest) (context: ILambdaContext) =
-        let dateTimeFromUnixTime =
-            int64 >> System.DateTimeOffset.FromUnixTimeSeconds >> (fun x -> x.UtcDateTime)
-        let startTime = request.start |> dateTimeFromUnixTime
-        let endTime   = request.finish |> dateTimeFromUnixTime
+        let startTime = request.start |> TimeUtil.dateTimeFromUnixTime
+        let endTime   = request.finish |> TimeUtil.dateTimeFromUnixTime
 
         sprintf "Reservation requested for boardId %s: %s -> %s" (request.boardId) (startTime.ToString()) (endTime.ToString()) |> context.Logger.LogLine
 

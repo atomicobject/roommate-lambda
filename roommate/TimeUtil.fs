@@ -24,4 +24,11 @@ module TimeUtil =
     let timeRangeContains (r:TimeRange) (d:DateTime) =
         r.start < d && d < r.finish
 
+    let dateTimeFromUnixTime =
+        int64 >> System.DateTimeOffset.FromUnixTimeSeconds >> (fun x -> x.UtcDateTime)
+
+    let unixTimeFromDate (d:DateTime) =
+        d |> DateTimeOffset |> fun x -> x.ToUnixTimeSeconds()
+
+
 

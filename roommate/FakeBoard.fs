@@ -30,7 +30,7 @@ module FakeBoard =
                     | Available -> green
                     >> (fun color -> TermColors.printBgColored color "  ")
 
-    let getLights (events: RoommateEvent list) =
+    let getLights (events: RoommateEvent list) : (LightState*TimeRange) list =
         let start = DateTime.Now |> roundDown
         let totalRange = {start=start;finish=start.AddHours(2.0)}
         let relevantEvents = events |> List.where (fun e -> timeRangeIntersects e.range totalRange)
@@ -39,9 +39,31 @@ module FakeBoard =
 
         slots |> List.map (fun slotRange ->
                     if currentEvent.IsSome && timeRangeIntersects currentEvent.Value.range slotRange then
-                        CurrentMeeting
+                        CurrentMeeting,slotRange
                     else if (relevantEvents |> List.exists (fun e -> timeRangeIntersects slotRange e.range)) then
-                        Busy
-                    else Available )
+                        Busy,slotRange
+                    else Available,slotRange )
+
+    let printLights (lights:(LightState*TimeRange) list) =
+        let start = DateTime.Now |> roundDown
+        let finish = start.AddHours 2.0
+
+        printf "%d:%d  " start.Hour start.Minute
+        lights |> List.map fst |> List.iter (fun x -> printLed x;printf "  ")
+        printf "%d:%d" finish.Hour finish.Minute
+//        printfn ""
+
+    let chooseNextTime (lights:(LightState*TimeRange) list) =
+        let numberedLights = lights |> List.mapi (fun i (lightState,timeRange) -> (lightState,timeRange,i))
+        let maybeLight = numberedLights |> List.tryFind (function | (Available,_,_) -> true | _ -> false)
+        if maybeLight.IsNone then
+            printfn "room booked solid! no slots available."
+            None
+        else
+            let light,range,pos = maybeLight.Value
+//            printfn "choosing position %d : %s - %s" pos (range.start.ToString()) (range.finish.ToString())
+            Some (range,pos)
+
+
 
 
