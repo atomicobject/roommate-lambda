@@ -1,5 +1,7 @@
 
-module roommate.AwsIotClient
+namespace Roommate
+
+module AwsIotClient =
 
     open Amazon.IotData
 

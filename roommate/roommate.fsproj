@@ -7,9 +7,12 @@
     <Compile Include="Messages.fs" />
     <Compile Include="RoommateConfig.fs" />
     <Compile Include="SecretReader.fs" />
+    <Compile Include="TimeUtil.fs" />
+    <Compile Include="TermColors.fs" />
     <Compile Include="WrappedDataStore.fs" />
     <Compile Include="GoogleCalendarClient.fs" />
     <Compile Include="CalendarWatcher.fs" />
+    <Compile Include="FakeBoard.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AWSSDK.IotData" Version="3.3.0.67" />
