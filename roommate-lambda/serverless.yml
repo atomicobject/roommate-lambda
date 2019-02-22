@@ -156,11 +156,10 @@ Resources:
                 - "arn:aws:iot:*:*:topic/*"
                 - "arn:aws:iot:*:*:client/*"
       Events:
-        Events:
-          RenewWebhooksEvent:
-            Type: Schedule
-            Properties:
-              Schedule: rate(5 minute) # todo: nightly
+        RenewWebhooksEvent:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minute) # todo: nightly
 
 Outputs:
   ApiURL:
