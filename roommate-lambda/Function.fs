@@ -141,7 +141,7 @@ type Functions() =
 
         sendAnUpdate request.clientId context
 
-    member __.RenewWebhooks (event:obj) (context:ILambdaContext) =
+    member __.RenewWebhooks (event:Amazon.Lambda.CloudWatchEvents.ScheduledEvents.ScheduledEvent) (context:ILambdaContext) =
         context.Logger.LogLine "RenewWebhooks"
         context.Logger.LogLine (sprintf "event: %s" (Newtonsoft.Json.JsonConvert.SerializeObject(event)))
         context.Logger.LogLine (sprintf "context: %s" (Newtonsoft.Json.JsonConvert.SerializeObject(context)))
