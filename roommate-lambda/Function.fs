@@ -140,4 +140,9 @@ type Functions() =
         sprintf "Device Connected! %s" (request.clientId) |> context.Logger.LogLine
 
         sendAnUpdate request.clientId context
+
+    member __.RenewWebhooks (request:string) (context:ILambdaContext) =
+        context.Logger.LogLine "RenewWebhooks"
+        context.Logger.LogLine request
+        context.Logger.LogLine (sprintf "%s" (Newtonsoft.Json.JsonConvert.SerializeObject(context)))
         ()
