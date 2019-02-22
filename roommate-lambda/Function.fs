@@ -141,8 +141,8 @@ type Functions() =
 
         sendAnUpdate request.clientId context
 
-    member __.RenewWebhooks (request:string) (context:ILambdaContext) =
+    member __.RenewWebhooks (event:obj) (context:ILambdaContext) =
         context.Logger.LogLine "RenewWebhooks"
-        context.Logger.LogLine request
-        context.Logger.LogLine (sprintf "%s" (Newtonsoft.Json.JsonConvert.SerializeObject(context)))
+        context.Logger.LogLine (sprintf "event: %s" (Newtonsoft.Json.JsonConvert.SerializeObject(event)))
+        context.Logger.LogLine (sprintf "context: %s" (Newtonsoft.Json.JsonConvert.SerializeObject(context)))
         ()
