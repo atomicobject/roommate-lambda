@@ -131,3 +131,8 @@ type Functions() =
                             | Error e -> logFn e
                             | _ -> ()
         ()
+
+    member __.OnDeviceConnect (request: Messages.DeviceConnect) (context: ILambdaContext) =
+        sprintf "Device Connected! %s" (request.clientId) |> context.Logger.LogLine
+
+        ()
