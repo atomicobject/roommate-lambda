@@ -23,3 +23,11 @@ module Messages =
         finish: int32
     }
 
+    type DeviceConnect = {
+      clientId: string
+      timestamp: int64
+      eventType: string
+      sessionIdentifier: string
+      principalIdentifier: string
+      versionNumber: int32
+    }

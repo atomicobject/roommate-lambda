@@ -15,13 +15,39 @@ open Roommate.CalendarWatcher
 ()
 
 
-
 type Functions() =
 
     let toMap kvps =
         kvps
         |> Seq.map (|KeyValue|)
         |> Map.ofSeq
+
+    let sendAnUpdate (boardId:string) (context:ILambdaContext) =
+
+        sprintf "Sending an update for %s" boardId |> context.Logger.LogLine
+
+        let config : LambdaConfiguration = {
+            roommateConfig = readSecretFromEnv "roommateConfig" |> RoommateConfig.deserializeConfig
+            serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
+            serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
+            serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
+            mqttEndpoint = readSecretFromEnv "mqttEndpoint"
+        }
+
+        let logFn = context.Logger.LogLine
+
+        boardId |> lookupCalendarForBoard config.roommateConfig
+                        |> function
+                            | None -> Error  "Unknown board"
+                            | Some calId -> Ok calId
+                        |> Result.bind (fetchEventsForCalendar logFn config)
+                        |> Result.bind (mapEventsToMessage)
+                        |> Result.bind (determineTopicsToPublishTo logFn config.roommateConfig)
+                        |> Result.bind (sendMessageToTopics logFn config.mqttEndpoint)
+                        |> function
+                            | Error e -> logFn e
+                            | _ -> ()
+        ()
 
     member __.Get (request: APIGatewayProxyRequest) (context: ILambdaContext) =
         let verificationCode = readSecretFromEnv "GOOGLE_VERIFICATION_CODE"
@@ -82,29 +108,7 @@ type Functions() =
 
     member __.UpdateRequest (request: Messages.UpdateRequest) (context: ILambdaContext) =
         sprintf "Updated requested for boardId %s" (request.boardId) |> context.Logger.LogLine
-
-        let config : LambdaConfiguration = {
-            roommateConfig = readSecretFromEnv "roommateConfig" |> RoommateConfig.deserializeConfig
-            serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
-            serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
-            serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
-            mqttEndpoint = readSecretFromEnv "mqttEndpoint"
-        }
-
-        let logFn = context.Logger.LogLine
-
-        request.boardId |> lookupCalendarForBoard config.roommateConfig
-                        |> function
-                            | None -> Error  "Unknown board"
-                            | Some calId -> Ok calId
-                        |> Result.bind (fetchEventsForCalendar logFn config)
-                        |> Result.bind (mapEventsToMessage)
-                        |> Result.bind (determineTopicsToPublishTo logFn config.roommateConfig)
-                        |> Result.bind (sendMessageToTopics logFn config.mqttEndpoint)
-                        |> function
-                            | Error e -> logFn e
-                            | _ -> ()
-        ()
+        sendAnUpdate request.boardId context
 
     member __.ReservationRequest (request: Messages.ReservationRequest) (context: ILambdaContext) =
         let startTime = request.start |> TimeUtil.dateTimeFromUnixTime
@@ -130,4 +134,10 @@ type Functions() =
                         |> function
                             | Error e -> logFn e
                             | _ -> ()
+        ()
+
+    member __.OnDeviceConnect (request: Messages.DeviceConnect) (context: ILambdaContext) =
+        sprintf "Device Connected! %s" (request.clientId) |> context.Logger.LogLine
+
+        sendAnUpdate request.clientId context
         ()
