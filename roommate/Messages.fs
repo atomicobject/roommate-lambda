@@ -25,7 +25,7 @@ module Messages =
 
     type DeviceConnect = {
       clientId: string
-      timestamp: int32
+      timestamp: int64
       eventType: string
       sessionIdentifier: string
       principalIdentifier: string
