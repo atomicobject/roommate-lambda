@@ -166,7 +166,15 @@ let main argv =
         if results.Contains Subscribe_All_Webhooks then
             let endpoint = results.GetResult Subscribe_All_Webhooks
             let calendarIds = RoommateConfig.allCalendarIds config
-            calendarIds |> List.iter (fun calId -> GoogleCalendarClient.activateWebhook calendarService calId endpoint |> Async.RunSynchronously |> ignore)
+            calendarIds |> List.iter (fun calId ->
+                printf "calendar %s" (calId.ToString())
+                try
+                    GoogleCalendarClient.activateWebhook calendarService calId endpoint |> Async.RunSynchronously |> ignore
+                    printfn " ..success"
+                with
+                | :? System.AggregateException as e  when e.InnerException.Message.Contains("not unique") -> printfn " .. already active"
+                | e -> printfn " ..error: \n%s\n" (e.ToString())
+                )
             // todo: log all the results
             ()
 
