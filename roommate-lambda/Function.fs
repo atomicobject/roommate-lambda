@@ -22,17 +22,21 @@ type Functions() =
         |> Seq.map (|KeyValue|)
         |> Map.ofSeq
 
-    let sendAnUpdate (boardId:string) (context:ILambdaContext) =
-
-        sprintf "Sending an update for %s" boardId |> context.Logger.LogLine
-
-        let config : LambdaConfiguration = {
+    let readConfig () : LambdaConfiguration =
+        {
             roommateConfig = readSecretFromEnv "roommateConfig" |> RoommateConfig.deserializeConfig
             serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
             serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
             serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
             mqttEndpoint = readSecretFromEnv "mqttEndpoint"
+            webhookUrl = readSecretFromEnv "webhookUrl"
         }
+
+    let sendAnUpdate (boardId:string) (context:ILambdaContext) =
+
+        sprintf "Sending an update for %s" boardId |> context.Logger.LogLine
+
+        let config = readConfig()
 
         let logFn = context.Logger.LogLine
 
@@ -76,13 +80,7 @@ type Functions() =
     member __.Post (request: APIGatewayProxyRequest) (context: ILambdaContext) =
         sprintf "Request: %s" request.Path |> context.Logger.LogLine
 
-        let config : LambdaConfiguration = {
-            roommateConfig = readSecretFromEnv "roommateConfig" |> RoommateConfig.deserializeConfig
-            serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
-            serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
-            serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
-            mqttEndpoint = readSecretFromEnv "mqttEndpoint"
-        }
+        let config = readConfig()
 
         let logFn = context.Logger.LogLine
 
@@ -116,13 +114,7 @@ type Functions() =
 
         sprintf "Reservation requested for boardId %s: %s -> %s" (request.boardId) (startTime.ToString()) (endTime.ToString()) |> context.Logger.LogLine
 
-        let config : LambdaConfiguration = {
-            roommateConfig = readSecretFromEnv "roommateConfig" |> RoommateConfig.deserializeConfig
-            serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
-            serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
-            serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
-            mqttEndpoint = readSecretFromEnv "mqttEndpoint"
-        }
+        let config = readConfig()
 
         let logFn = context.Logger.LogLine
 
@@ -145,4 +137,6 @@ type Functions() =
         context.Logger.LogLine "RenewWebhooks"
         context.Logger.LogLine (sprintf "event: %s" (Newtonsoft.Json.JsonConvert.SerializeObject(event)))
         context.Logger.LogLine (sprintf "context: %s" (Newtonsoft.Json.JsonConvert.SerializeObject(context)))
+        let config = readConfig()
+        context.Logger.LogLine (sprintf "webhook URL: %s" config.webhookUrl)
         ()

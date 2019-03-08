@@ -14,6 +14,7 @@ module CalendarWatcher =
         serviceAccountPrivKey: string
         serviceAccountAppName: string
         mqttEndpoint: string
+        webhookUrl: string
     }
 
     let calIdFromURI (calURI:string) =
