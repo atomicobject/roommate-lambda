@@ -1,5 +1,6 @@
 namespace RoommateLambda
 
+open System
 open System.Net
 
 open Amazon.Lambda.Core
@@ -144,10 +145,19 @@ type Functions() =
 
         let calIds = RoommateConfig.allCalendarIds config.roommateConfig
 
+        let expiration = DateTimeOffset.Now.AddMinutes(3.0)
+        let expiration_ms = expiration.ToUnixTimeMilliseconds()
+        logFn (sprintf "setting expiration for %s (%d))" (expiration.ToString()) expiration_ms)
+
         // todo: batch request https://developers.google.com/api-client-library/dotnet/guide/batch
         calIds |> Seq.iter (fun calId ->
-            let result = GoogleCalendarClient.activateExpiringWebhook calendarService calId config.webhookUrl logFn |> Async.RunSynchronously
-            logFn <| sprintf "%s" (result.ToString())
+                logFn <| sprintf "calendar %s" (calId.ToString())
+                try
+                    GoogleCalendarClient.activateExpiringWebhook calendarService calId config.webhookUrl expiration_ms |> Async.RunSynchronously |> ignore
+                    printfn " ..success"
+                with
+                | :? System.AggregateException as e  when e.InnerException.Message.Contains("not unique") -> printfn " .. already active"
+                | e -> printfn " ..error: \n%s\n" (e.ToString())
             )
 
         ()
