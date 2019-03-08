@@ -8,7 +8,7 @@ open Amazon.Lambda.APIGatewayEvents
 open Roommate
 open Roommate
 open Roommate.SecretReader
-open Roommate.CalendarWatcher
+open Roommate.RoommateLogic
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [<assembly: LambdaSerializer(typeof<Amazon.Lambda.Serialization.Json.JsonSerializer>)>]
@@ -134,9 +134,20 @@ type Functions() =
         sendAnUpdate request.clientId context
 
     member __.RenewWebhooks (event:Amazon.Lambda.CloudWatchEvents.ScheduledEvents.ScheduledEvent) (context:ILambdaContext) =
-        context.Logger.LogLine "RenewWebhooks"
-        context.Logger.LogLine (sprintf "event: %s" (Newtonsoft.Json.JsonConvert.SerializeObject(event)))
-        context.Logger.LogLine (sprintf "context: %s" (Newtonsoft.Json.JsonConvert.SerializeObject(context)))
+        let logFn = context.Logger.LogLine
         let config = readConfig()
-        context.Logger.LogLine (sprintf "webhook URL: %s" config.webhookUrl)
+        logFn (sprintf "event: %s" (Newtonsoft.Json.JsonConvert.SerializeObject(event)))
+        logFn (sprintf "context: %s" (Newtonsoft.Json.JsonConvert.SerializeObject(context)))
+        logFn (sprintf "webhook URL: %s" config.webhookUrl)
+
+        let calendarService = GoogleCalendarClient.serviceAccountSignIn config.serviceAccountEmail config.serviceAccountPrivKey config.serviceAccountAppName |> Async.RunSynchronously
+
+        let calIds = RoommateConfig.allCalendarIds config.roommateConfig
+
+        // todo: batch request https://developers.google.com/api-client-library/dotnet/guide/batch
+        calIds |> Seq.iter (fun calId ->
+            let result = GoogleCalendarClient.activateExpiringWebhook calendarService calId config.webhookUrl logFn |> Async.RunSynchronously
+            logFn <| sprintf "%s" (result.ToString())
+            )
+
         ()

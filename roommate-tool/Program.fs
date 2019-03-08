@@ -212,7 +212,7 @@ let main argv =
                         |> GoogleCalendarClient.fetchEvents calendarService
                         |> Async.RunSynchronously
                         |> fun x -> x.Items
-                        |> Seq.map CalendarWatcher.transformEvent
+                        |> Seq.map RoommateLogic.transformEvent
                         |> List.ofSeq
                         |> getLights
 
@@ -226,7 +226,7 @@ let main argv =
                         |> GoogleCalendarClient.fetchEvents calendarService
                         |> Async.RunSynchronously
                         |> fun x -> x.Items
-                        |> Seq.map CalendarWatcher.transformEvent
+                        |> Seq.map RoommateLogic.transformEvent
                         |> List.ofSeq
                         |> getLights
 

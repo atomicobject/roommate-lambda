@@ -1,7 +1,7 @@
 namespace Roommate
 
 module FakeBoard =
-    open CalendarWatcher
+    open RoommateLogic
     open System
     open TimeUtil
 

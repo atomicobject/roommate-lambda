@@ -1,6 +1,6 @@
 namespace Roommate
 
-module CalendarWatcher =
+module RoommateLogic =
 
     open System
     open GoogleCalendarClient
