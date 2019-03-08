@@ -159,8 +159,7 @@ Resources:
         RenewWebhooksEvent:
           Type: Schedule
           Properties:
-            # todo: nightly
-            Schedule: rate(5 minutes)
+            Schedule: cron(0 6 * * ? *)
 
 Outputs:
   ApiURL:

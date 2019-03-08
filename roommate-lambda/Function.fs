@@ -145,7 +145,7 @@ type Functions() =
 
         let calIds = RoommateConfig.allCalendarIds config.roommateConfig
 
-        let expiration = DateTimeOffset.Now.AddMinutes(3.0)
+        let expiration = DateTimeOffset.Now.AddHours(24.0)
         let expiration_ms = expiration.ToUnixTimeMilliseconds()
         logFn (sprintf "setting expiration for %s (%d))" (expiration.ToString()) expiration_ms)
 

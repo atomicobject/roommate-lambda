@@ -154,7 +154,6 @@ module GoogleCalendarClient =
         async {
             let subscriptionId = sprintf "roommate-tool-%s" (shorten (LongCalId calendarId))
             // https://developers.google.com/calendar/v3/push#making-watch-requests
-//            System.DateTime.Today.AddMinutes(4.0)
             let channel = new Channel(Address = url, Type = "web_hook",Id = subscriptionId, Expiration = System.Nullable expiration_ms)
 
             let request = calendarService.Events.Watch(channel,calendarId)
