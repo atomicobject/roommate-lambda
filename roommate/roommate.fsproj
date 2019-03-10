@@ -9,7 +9,6 @@
     <Compile Include="SecretReader.fs" />
     <Compile Include="TimeUtil.fs" />
     <Compile Include="TermColors.fs" />
-    <Compile Include="WrappedDataStore.fs" />
     <Compile Include="GoogleCalendarClient.fs" />
     <Compile Include="RoommateLogic.fs" />
     <Compile Include="FakeBoard.fs" />
