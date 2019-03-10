@@ -1,6 +1,6 @@
 namespace Roommate
 
-module CalendarWatcher =
+module RoommateLogic =
 
     open System
     open GoogleCalendarClient
@@ -14,6 +14,7 @@ module CalendarWatcher =
         serviceAccountPrivKey: string
         serviceAccountAppName: string
         mqttEndpoint: string
+        webhookUrl: string
     }
 
     let calIdFromURI (calURI:string) =

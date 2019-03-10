@@ -1,42 +1,28 @@
-# Empty AWS Serverless Application Project
+# Roommate Lambda
 
-This starter project consists of:
-* serverless.template - an AWS CloudFormation Serverless Application Model template file for declaring your Serverless functions and other AWS resources
-* Function.fs - Code file containing the F# function mapped to the single function declared in the template file
-* aws-lambda-tools-defaults.json - default argument settings for use with Visual Studio and command line deployment tools for AWS
+This is the backend for the Roommate project.
 
-You may also have a test project depending on the options selected.
+### Get (todo: rename)
+This serves up a verification code to prove to Google that we own the domain, so that they're willing to send push notifications to it.
 
-The generated project contains a Serverless template declaration for a single AWS Lambda function that will be exposed through Amazon API Gateway as a HTTP *Get* operation. Edit the template to customize the function or add more functions and other resources needed by your application, and edit the function code in Function.cs. You can then deploy your Serverless application.
+### Post (todo: rename)
 
-## Here are some steps to follow from Visual Studio:
+This is where we get push notifications. The notification informs us when a calendar has changed, so we then fetch its events, look up whether there's currently any boards assigned to it, and send an updates to the boards' MQTT topics.
 
-To deploy your Serverless application, right click the project in Solution Explorer and select *Publish to AWS Lambda*.
+### UpdateRequest
 
-To view your deployed application open the Stack View window by double-clicking the stack name shown beneath the AWS CloudFormation node in the AWS Explorer tree. The Stack View also displays the root URL to your published application.
+This is for when a device specifically asks for an update. We look up which calendar is assigned to the requesting board, fetch events, and send an update.
 
-## Here are some steps to follow to get started from the command line:
+### ReservationRequest
 
-Once you have edited your template and code you can deploy your application using the [Amazon.Lambda.Tools Global Tool](https://github.com/aws/aws-extensions-for-dotnet-cli#aws-lambda-amazonlambdatools) from the command line.
+This runs when a device requests a new reservation (when you push the button on the device). We look up what calendar the board is assigned to, fetch events for it, see if the time requested is available, and conditionally create the event.
 
-Install Amazon.Lambda.Tools Global Tools if not already installed.
-```
-    dotnet tool install -g Amazon.Lambda.Tools
-```
+There's currently nothing sent to the board afterward, but we'll generally get a Google push notification soon after creating the event. To improve reliability and/or latency we might want to change this, sending a message from here and not relying on the push notification. We'd probably need to poll until we see that the event has been created successfully (and that the conference room has accepted the reservation).
 
-If already installed check if new version is available.
-```
-    dotnet tool update -g Amazon.Lambda.Tools
-```
+### OnDeviceConnect
 
-Execute unit tests
-```
-    cd "roommate-lambda/test/roommate-lambda.Tests"
-    dotnet test
-```
+This fires when a device connects, and sends it an update.
 
-Deploy application
-```
-    cd "roommate-lambda/src/roommate-lambda"
-    dotnet lambda deploy-serverless
-```
+### RenewWebhooks
+
+This runs nightly to renew our push notification subscriptions. Currently, we request a new 24h subscription each night (with a new ID). So, it's possible that there's a small gap without a subscription, or a small overlap where we have two.

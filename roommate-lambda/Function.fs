@@ -1,5 +1,6 @@
 namespace RoommateLambda
 
+open System
 open System.Net
 
 open Amazon.Lambda.Core
@@ -8,7 +9,7 @@ open Amazon.Lambda.APIGatewayEvents
 open Roommate
 open Roommate
 open Roommate.SecretReader
-open Roommate.CalendarWatcher
+open Roommate.RoommateLogic
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [<assembly: LambdaSerializer(typeof<Amazon.Lambda.Serialization.Json.JsonSerializer>)>]
@@ -22,17 +23,21 @@ type Functions() =
         |> Seq.map (|KeyValue|)
         |> Map.ofSeq
 
-    let sendAnUpdate (boardId:string) (context:ILambdaContext) =
-
-        sprintf "Sending an update for %s" boardId |> context.Logger.LogLine
-
-        let config : LambdaConfiguration = {
+    let readConfig () : LambdaConfiguration =
+        {
             roommateConfig = readSecretFromEnv "roommateConfig" |> RoommateConfig.deserializeConfig
             serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
             serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
             serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
             mqttEndpoint = readSecretFromEnv "mqttEndpoint"
+            webhookUrl = readSecretFromEnv "webhookUrl"
         }
+
+    let sendAnUpdate (boardId:string) (context:ILambdaContext) =
+
+        sprintf "Sending an update for %s" boardId |> context.Logger.LogLine
+
+        let config = readConfig()
 
         let logFn = context.Logger.LogLine
 
@@ -76,13 +81,7 @@ type Functions() =
     member __.Post (request: APIGatewayProxyRequest) (context: ILambdaContext) =
         sprintf "Request: %s" request.Path |> context.Logger.LogLine
 
-        let config : LambdaConfiguration = {
-            roommateConfig = readSecretFromEnv "roommateConfig" |> RoommateConfig.deserializeConfig
-            serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
-            serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
-            serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
-            mqttEndpoint = readSecretFromEnv "mqttEndpoint"
-        }
+        let config = readConfig()
 
         let logFn = context.Logger.LogLine
 
@@ -116,13 +115,7 @@ type Functions() =
 
         sprintf "Reservation requested for boardId %s: %s -> %s" (request.boardId) (startTime.ToString()) (endTime.ToString()) |> context.Logger.LogLine
 
-        let config : LambdaConfiguration = {
-            roommateConfig = readSecretFromEnv "roommateConfig" |> RoommateConfig.deserializeConfig
-            serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
-            serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
-            serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
-            mqttEndpoint = readSecretFromEnv "mqttEndpoint"
-        }
+        let config = readConfig()
 
         let logFn = context.Logger.LogLine
 
@@ -140,4 +133,31 @@ type Functions() =
         sprintf "Device Connected! %s" (request.clientId) |> context.Logger.LogLine
 
         sendAnUpdate request.clientId context
+
+    member __.RenewWebhooks (event:Amazon.Lambda.CloudWatchEvents.ScheduledEvents.ScheduledEvent) (context:ILambdaContext) =
+        let logFn = context.Logger.LogLine
+        let config = readConfig()
+        logFn (sprintf "event: %s" (Newtonsoft.Json.JsonConvert.SerializeObject(event)))
+        logFn (sprintf "context: %s" (Newtonsoft.Json.JsonConvert.SerializeObject(context)))
+        logFn (sprintf "webhook URL: %s" config.webhookUrl)
+
+        let calendarService = GoogleCalendarClient.serviceAccountSignIn config.serviceAccountEmail config.serviceAccountPrivKey config.serviceAccountAppName |> Async.RunSynchronously
+
+        let calIds = RoommateConfig.allCalendarIds config.roommateConfig
+
+        let expiration = DateTimeOffset.Now.AddHours(24.0)
+        let expiration_ms = expiration.ToUnixTimeMilliseconds()
+        logFn (sprintf "setting expiration for %s (%d))" (expiration.ToString()) expiration_ms)
+
+        // todo: batch request https://developers.google.com/api-client-library/dotnet/guide/batch
+        calIds |> Seq.iter (fun calId ->
+                logFn <| sprintf "calendar %s" (calId.ToString())
+                try
+                    GoogleCalendarClient.activateExpiringWebhook calendarService calId config.webhookUrl expiration_ms |> Async.RunSynchronously |> ignore
+                    printfn " ..success"
+                with
+                | :? System.AggregateException as e  when e.InnerException.Message.Contains("not unique") -> printfn " .. already active"
+                | e -> printfn " ..error: \n%s\n" (e.ToString())
+            )
+
         ()

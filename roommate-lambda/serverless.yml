@@ -133,6 +133,34 @@ Resources:
           Properties:
             Sql: "SELECT * FROM '$aws/events/presence/connected/#'"
 
+  RenewWebhooks:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      Handler: "roommate-lambda::RoommateLambda.Functions::RenewWebhooks"
+      Runtime: "dotnetcore2.1"
+      CodeUri: ""
+      MemorySize: 256
+      Timeout: 30
+      Role: null
+      Policies:
+        - AWSLambdaBasicExecutionRole # todo: dry this out
+        -
+          Version: "2012-10-17"
+          Statement:
+            -
+              Effect: "Allow"
+              Action:
+                - "iot:Connect"
+                - "iot:Publish"
+              Resource:
+                - "arn:aws:iot:*:*:topic/*"
+                - "arn:aws:iot:*:*:client/*"
+      Events:
+        RenewWebhooksEvent:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 2 * * ? *)
+
 Outputs:
   ApiURL:
     Description: "API endpoint URL for Prod environment"

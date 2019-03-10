@@ -150,10 +150,22 @@ module GoogleCalendarClient =
 //                logFn (sprintf "%s" (serializeIndented e))
                 )
 
+    let activateExpiringWebhook (calendarService:CalendarService) (LongCalId calendarId) url expiration_ms =
+        async {
+            let d : int32 = DateTime.Now.Date.Day
+            let subscriptionId = sprintf "roommate-lambda-%d-%s" d (shorten (LongCalId calendarId))
+            // https://developers.google.com/calendar/v3/push#making-watch-requests
+            let channel = new Channel(Address = url, Type = "web_hook",Id = subscriptionId, Expiration = System.Nullable expiration_ms)
+
+            let request = calendarService.Events.Watch(channel,calendarId)
+
+            // Execute the request
+            let! result =request.ExecuteAsync() |> Async.AwaitTask
+            return result
+        }
     let activateWebhook (calendarService:CalendarService) (LongCalId calendarId) url =
         async {
             let subscriptionId = sprintf "roommate-tool-%s" (shorten (LongCalId calendarId))
-            // https://developers.google.com/calendar/v3/push#making-watch-requests
             let channel = new Channel(Address = url, Type = "web_hook",Id = subscriptionId)
 
             let request = calendarService.Events.Watch(channel,calendarId)

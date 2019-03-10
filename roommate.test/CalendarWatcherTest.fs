@@ -8,7 +8,7 @@ module CalendarWatcherTest =
     open Google.Apis.Calendar.v3.Data
     open Google.Apis.Calendar.v3.Data
     open Google.Apis.Calendar.v3.Data
-    open Roommate.CalendarWatcher
+    open Roommate.RoommateLogic
     open Roommate.TimeUtil
 
     [<Fact>]
