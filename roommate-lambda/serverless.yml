@@ -4,7 +4,7 @@ Description: "An AWS Serverless Application."
 
 Resources:
   IotPolicy:
-    Type: "AWS::IAM::Policy"
+    Type: "AWS::IAM::ManagedPolicy"
     Properties:
       PolicyName: IotPolicy
       PolicyDocument:
