@@ -5,18 +5,19 @@ Description: "An AWS Serverless Application."
 Resources:
   IotPolicy:
     Type: "AWS::IAM::Policy"
-    PolicyName: IotPolicy
-    PolicyDocument:
-      Version: "2012-10-17"
-      Statement:
-        -
-          Effect: "Allow"
-          Action:
-            - "iot:Connect"
-            - "iot:Publish"
-          Resource:
-            - "arn:aws:iot:*:*:topic/*"
-            - "arn:aws:iot:*:*:client/*"
+    Properties:
+      PolicyName: IotPolicy
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Action:
+              - "iot:Connect"
+              - "iot:Publish"
+            Resource:
+              - "arn:aws:iot:*:*:topic/*"
+              - "arn:aws:iot:*:*:client/*"
 
   Get:
     Type: "AWS::Serverless::Function"
