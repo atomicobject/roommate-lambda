@@ -3,6 +3,35 @@ Transform: "AWS::Serverless-2016-10-31"
 Description: "An AWS Serverless Application."
 
 Resources:
+  RoommateLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+        -
+          PolicyName: "roommate-iot"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "iot:Connect"
+                  - "iot:Publish"
+                Resource:
+                  - "arn:aws:iot:*:*:topic/*"
+                  - "arn:aws:iot:*:*:client/*"
+
   Get:
     Type: "AWS::Serverless::Function"
     Properties:
@@ -11,8 +40,7 @@ Resources:
       CodeUri: ""
       MemorySize: 256
       Timeout: 30
-      Role: null
-      Policies: ["AWSLambdaBasicExecutionRole"]
+      Role: !GetAtt RoommateLambdaExecutionRole.Arn
       Events:
         GetResource:
           Type: "Api"
@@ -20,28 +48,15 @@ Resources:
             Path: "/"
             Method: "GET"
 
-  Post:
+  CalendarUpdate:
     Type: "AWS::Serverless::Function"
     Properties:
-      Handler: "roommate-lambda::RoommateLambda.Functions::Post"
+      Handler: "roommate-lambda::RoommateLambda.Functions::CalendarUpdate"
       Runtime: "dotnetcore2.1"
       CodeUri: ""
       MemorySize: 256
       Timeout: 30
-      Role: null
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        -
-          Version: "2012-10-17"
-          Statement:
-            -
-              Effect: "Allow"
-              Action:
-                - "iot:Connect"
-                - "iot:Publish"
-              Resource:
-                - "arn:aws:iot:*:*:topic/*"
-                - "arn:aws:iot:*:*:client/*"
+      Role: !GetAtt RoommateLambdaExecutionRole.Arn
       Events:
         PutResource:
           Type: "Api"
@@ -57,20 +72,7 @@ Resources:
       CodeUri: ""
       MemorySize: 256
       Timeout: 30
-      Role: null
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        -
-          Version: "2012-10-17"
-          Statement:
-            -
-              Effect: "Allow"
-              Action:
-                - "iot:Connect"
-                - "iot:Publish"
-              Resource:
-                - "arn:aws:iot:*:*:topic/*"
-                - "arn:aws:iot:*:*:client/*"
+      Role: !GetAtt RoommateLambdaExecutionRole.Arn
       Events:
         UpdateRequest:
           Type: IoTRule
@@ -85,20 +87,7 @@ Resources:
       CodeUri: ""
       MemorySize: 256
       Timeout: 30
-      Role: null
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        -
-          Version: "2012-10-17"
-          Statement:
-            -
-              Effect: "Allow"
-              Action:
-                - "iot:Connect"
-                - "iot:Publish"
-              Resource:
-                - "arn:aws:iot:*:*:topic/*"
-                - "arn:aws:iot:*:*:client/*"
+      Role: !GetAtt RoommateLambdaExecutionRole.Arn
       Events:
         UpdateRequest:
           Type: IoTRule
@@ -113,20 +102,7 @@ Resources:
       CodeUri: ""
       MemorySize: 256
       Timeout: 30
-      Role: null
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        -
-          Version: "2012-10-17"
-          Statement:
-            -
-              Effect: "Allow"
-              Action:
-                - "iot:Connect"
-                - "iot:Publish"
-              Resource:
-                - "arn:aws:iot:*:*:topic/*"
-                - "arn:aws:iot:*:*:client/*"
+      Role: !GetAtt RoommateLambdaExecutionRole.Arn
       Events:
         UpdateRequest:
           Type: IoTRule
@@ -141,20 +117,7 @@ Resources:
       CodeUri: ""
       MemorySize: 256
       Timeout: 30
-      Role: null
-      Policies:
-        - AWSLambdaBasicExecutionRole # todo: dry this out
-        -
-          Version: "2012-10-17"
-          Statement:
-            -
-              Effect: "Allow"
-              Action:
-                - "iot:Connect"
-                - "iot:Publish"
-              Resource:
-                - "arn:aws:iot:*:*:topic/*"
-                - "arn:aws:iot:*:*:client/*"
+      Role: !GetAtt RoommateLambdaExecutionRole.Arn
       Events:
         RenewWebhooksEvent:
           Type: Schedule

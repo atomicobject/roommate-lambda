@@ -78,7 +78,7 @@ type Functions() =
         )
 
 
-    member __.Post (request: APIGatewayProxyRequest) (context: ILambdaContext) =
+    member __.CalendarUpdate (request: APIGatewayProxyRequest) (context: ILambdaContext) =
         sprintf "Request: %s" request.Path |> context.Logger.LogLine
 
         let config = readConfig()

@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <Compile Include="CalendarWatcherTest.fs" />
-    <Compile Include="WrappedDataStoreTest.fs" />
     <Compile Include="FakeBoardTest.fs" />
     <Compile Include="TimeUtilTest.fs" />
     <Compile Include="RoommateConfigTest.fs" />

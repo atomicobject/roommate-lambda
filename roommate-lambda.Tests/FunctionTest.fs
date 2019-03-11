@@ -25,7 +25,7 @@ module FunctionTest =
         let context = TestLambdaContext()
         let emptyMap = [] |> Map.ofList
         let request = APIGatewayProxyRequest(Headers = emptyMap)
-        let response = functions.Post request context
+        let response = functions.CalendarUpdate request context
 
         Assert.Equal(200, response.StatusCode)
         Assert.Equal("Hello AWS Serverless (POST)", response.Body)
