@@ -48,10 +48,10 @@ Resources:
             Path: "/"
             Method: "GET"
 
-  Post:
+  CalendarUpdate:
     Type: "AWS::Serverless::Function"
     Properties:
-      Handler: "roommate-lambda::RoommateLambda.Functions::Post"
+      Handler: "roommate-lambda::RoommateLambda.Functions::CalendarUpdate"
       Runtime: "dotnetcore2.1"
       CodeUri: ""
       MemorySize: 256
