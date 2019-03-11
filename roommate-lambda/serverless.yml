@@ -40,8 +40,7 @@ Resources:
       CodeUri: ""
       MemorySize: 256
       Timeout: 30
-      Role: null
-      Policies: ["AWSLambdaBasicExecutionRole"]
+      Role: !GetAtt RoommateLambdaExecutionRole.Arn
       Events:
         GetResource:
           Type: "Api"
@@ -57,20 +56,7 @@ Resources:
       CodeUri: ""
       MemorySize: 256
       Timeout: 30
-      Role: null
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        -
-          Version: "2012-10-17"
-          Statement:
-            -
-              Effect: "Allow"
-              Action:
-                - "iot:Connect"
-                - "iot:Publish"
-              Resource:
-                - "arn:aws:iot:*:*:topic/*"
-                - "arn:aws:iot:*:*:client/*"
+      Role: !GetAtt RoommateLambdaExecutionRole.Arn
       Events:
         PutResource:
           Type: "Api"
@@ -86,20 +72,7 @@ Resources:
       CodeUri: ""
       MemorySize: 256
       Timeout: 30
-      Role: null
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        -
-          Version: "2012-10-17"
-          Statement:
-            -
-              Effect: "Allow"
-              Action:
-                - "iot:Connect"
-                - "iot:Publish"
-              Resource:
-                - "arn:aws:iot:*:*:topic/*"
-                - "arn:aws:iot:*:*:client/*"
+      Role: !GetAtt RoommateLambdaExecutionRole.Arn
       Events:
         UpdateRequest:
           Type: IoTRule
@@ -114,20 +87,7 @@ Resources:
       CodeUri: ""
       MemorySize: 256
       Timeout: 30
-      Role: null
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        -
-          Version: "2012-10-17"
-          Statement:
-            -
-              Effect: "Allow"
-              Action:
-                - "iot:Connect"
-                - "iot:Publish"
-              Resource:
-                - "arn:aws:iot:*:*:topic/*"
-                - "arn:aws:iot:*:*:client/*"
+      Role: !GetAtt RoommateLambdaExecutionRole.Arn
       Events:
         UpdateRequest:
           Type: IoTRule
@@ -142,20 +102,7 @@ Resources:
       CodeUri: ""
       MemorySize: 256
       Timeout: 30
-      Role: null
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        -
-          Version: "2012-10-17"
-          Statement:
-            -
-              Effect: "Allow"
-              Action:
-                - "iot:Connect"
-                - "iot:Publish"
-              Resource:
-                - "arn:aws:iot:*:*:topic/*"
-                - "arn:aws:iot:*:*:client/*"
+      Role: !GetAtt RoommateLambdaExecutionRole.Arn
       Events:
         UpdateRequest:
           Type: IoTRule
@@ -170,20 +117,7 @@ Resources:
       CodeUri: ""
       MemorySize: 256
       Timeout: 30
-      Role: null
-      Policies:
-        - AWSLambdaBasicExecutionRole # todo: dry this out
-        -
-          Version: "2012-10-17"
-          Statement:
-            -
-              Effect: "Allow"
-              Action:
-                - "iot:Connect"
-                - "iot:Publish"
-              Resource:
-                - "arn:aws:iot:*:*:topic/*"
-                - "arn:aws:iot:*:*:client/*"
+      Role: !GetAtt RoommateLambdaExecutionRole.Arn
       Events:
         RenewWebhooksEvent:
           Type: Schedule
