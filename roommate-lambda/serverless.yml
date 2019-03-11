@@ -3,21 +3,32 @@ Transform: "AWS::Serverless-2016-10-31"
 Description: "An AWS Serverless Application."
 
 Resources:
-  IotPolicy:
-    Type: "AWS::IAM::ManagedPolicy"
+  RoommateLambdaExecutionRole:
+    Type: AWS::IAM::Role
     Properties:
-      PolicyName: IotPolicy
-      PolicyDocument:
-        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
         Statement:
-          -
-            Effect: "Allow"
-            Action:
-              - "iot:Connect"
-              - "iot:Publish"
-            Resource:
-              - "arn:aws:iot:*:*:topic/*"
-              - "arn:aws:iot:*:*:client/*"
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+        - PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "iot:Connect"
+                  - "iot:Publish"
+                Resource:
+                  - "arn:aws:iot:*:*:topic/*"
+                  - "arn:aws:iot:*:*:client/*"
 
   Get:
     Type: "AWS::Serverless::Function"
@@ -47,7 +58,17 @@ Resources:
       Role: null
       Policies:
         - AWSLambdaBasicExecutionRole
-        - !Ref IotPolicy
+        -
+          Version: "2012-10-17"
+          Statement:
+            -
+              Effect: "Allow"
+              Action:
+                - "iot:Connect"
+                - "iot:Publish"
+              Resource:
+                - "arn:aws:iot:*:*:topic/*"
+                - "arn:aws:iot:*:*:client/*"
       Events:
         PutResource:
           Type: "Api"
@@ -66,7 +87,17 @@ Resources:
       Role: null
       Policies:
         - AWSLambdaBasicExecutionRole
-        - !Ref IotPolicy
+        -
+          Version: "2012-10-17"
+          Statement:
+            -
+              Effect: "Allow"
+              Action:
+                - "iot:Connect"
+                - "iot:Publish"
+              Resource:
+                - "arn:aws:iot:*:*:topic/*"
+                - "arn:aws:iot:*:*:client/*"
       Events:
         UpdateRequest:
           Type: IoTRule
@@ -84,7 +115,17 @@ Resources:
       Role: null
       Policies:
         - AWSLambdaBasicExecutionRole
-        - !Ref IotPolicy
+        -
+          Version: "2012-10-17"
+          Statement:
+            -
+              Effect: "Allow"
+              Action:
+                - "iot:Connect"
+                - "iot:Publish"
+              Resource:
+                - "arn:aws:iot:*:*:topic/*"
+                - "arn:aws:iot:*:*:client/*"
       Events:
         UpdateRequest:
           Type: IoTRule
@@ -102,7 +143,17 @@ Resources:
       Role: null
       Policies:
         - AWSLambdaBasicExecutionRole
-        - !Ref IotPolicy
+        -
+          Version: "2012-10-17"
+          Statement:
+            -
+              Effect: "Allow"
+              Action:
+                - "iot:Connect"
+                - "iot:Publish"
+              Resource:
+                - "arn:aws:iot:*:*:topic/*"
+                - "arn:aws:iot:*:*:client/*"
       Events:
         UpdateRequest:
           Type: IoTRule
@@ -119,8 +170,18 @@ Resources:
       Timeout: 30
       Role: null
       Policies:
-        - AWSLambdaBasicExecutionRole
-        - !Ref IotPolicy
+        - AWSLambdaBasicExecutionRole # todo: dry this out
+        -
+          Version: "2012-10-17"
+          Statement:
+            -
+              Effect: "Allow"
+              Action:
+                - "iot:Connect"
+                - "iot:Publish"
+              Resource:
+                - "arn:aws:iot:*:*:topic/*"
+                - "arn:aws:iot:*:*:client/*"
       Events:
         RenewWebhooksEvent:
           Type: Schedule
