@@ -18,7 +18,9 @@ Resources:
           Action:
           - sts:AssumeRole
       Policies:
-        - PolicyDocument:
+        -
+          PolicyName: "roommate-iot"
+          PolicyDocument:
             Version: "2012-10-17"
             Statement:
               -
