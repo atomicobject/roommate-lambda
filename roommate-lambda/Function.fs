@@ -96,12 +96,12 @@ type Functions() =
 
         let config = FunctionImpls.readConfig()
 
-
         request.boardId |> lookupCalendarForBoard config.roommateConfig
                         |> function
                             | None -> Error  "Unknown board"
                             | Some calId -> Ok calId
                         |> Result.bind (createCalendarEvent logFn config startTime endTime)
+                        |> Result.bind (fun _ -> FunctionImpls.sendAnUpdateToBoard request.boardId logFn)
                         |> function
                             | Error e -> logFn e
                             | _ -> ()

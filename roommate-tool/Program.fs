@@ -194,9 +194,14 @@ let main argv =
             let finish = System.DateTime.Now.AddHours(12.0).AddMinutes(15.0)
             let result = (GoogleCalendarClient.createEvent calendarService config.myCalendar roomToInvite.calendarId start finish |> Async.RunSynchronously)
 
-            printfn "created:"
-            printfn ""
-            printfn "%s" (summarizeEvent result)
+            match result with
+            | Ok r ->
+                printfn "created:"
+                printfn ""
+                printfn "%s" (summarizeEvent r)
+            | Error reason ->
+                printfn "failed to create event."
+                printfn "%s" reason
 
         if results.Contains Update_Event then
             let eventId = results.GetResult Update_Event

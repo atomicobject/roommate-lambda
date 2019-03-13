@@ -58,8 +58,32 @@ module GoogleCalendarClient =
         }
 
     let singleAttendeesStatus (event:Event) =
-        // todo: fail if attendees length != 1
+        // todo: handle attendees length != 1
         (event.Attendees.Item(0).ResponseStatus)
+
+    let pollForAttendee (calendarService:CalendarService) eventId calendarId =
+        // todo: better
+        let mutable keepGoing = true
+        let mutable count = 0
+        let maxCount = 20
+        let mutable lastResult = None
+        while keepGoing do
+            if count > maxCount then
+                keepGoing <- false
+
+            let getRequest = calendarService.Events.Get(calendarId,eventId)
+            lastResult <- Some (getRequest.Execute())
+            let newStatus = singleAttendeesStatus lastResult.Value
+            printfn "new status: %s" (lastResult.Value.Attendees.Item(0).ResponseStatus)
+            if newStatus = "needsAction" then
+                printfn "still waiting.."
+                count <- count + 1
+                Thread.Sleep(1000)
+            else
+                keepGoing <- false
+        match lastResult with
+        | Some x -> Ok x
+        | None -> Result.Error "Error while polling"
 
     let createEvent (calendarService:CalendarService) calendarId (LongCalId attendee) start finish =
         async {
@@ -76,30 +100,30 @@ module GoogleCalendarClient =
                             )
             let request = calendarService.Events.Insert(event, calendarId)
             let! creationResult = request.ExecuteAsync() |> Async.AwaitTask
-            let mutable latestResult = creationResult
             printfn "Successfully created event on %s" calendarId
             printfn "initial attendee response status %s" (creationResult.Attendees.Item(0).ResponseStatus)
-//            for i in [1..20] do
-            let mutable keepGoing = true
-            let mutable count = 0
-            let maxCount = 20
-            while keepGoing do
-                if count > maxCount then
-                    keepGoing <- false
+            let latestResult = pollForAttendee calendarService creationResult.Id calendarId
 
-                let getRequest = calendarService.Events.Get(calendarId,creationResult.Id)
-                let newResult = getRequest.Execute()
-                let newStatus = singleAttendeesStatus newResult
-                printfn "new status: %s" (newResult.Attendees.Item(0).ResponseStatus)
-                if newStatus = "needsAction" then
-                    printfn "still waiting.."
-                    count <- count + 1
-                    Thread.Sleep(1000)
-                else
-                    printfn "new status! %s" newStatus
-                    keepGoing <- false
 
-            return creationResult
+            let finalResult = latestResult
+                                |> Result.map singleAttendeesStatus
+                                |> function
+                                    | Ok "needsAction" -> Result.Error "timed out, apparently"
+                                    | Ok "accepted" -> Result.Ok creationResult
+                                    | Ok "declined" -> Result.Error "declined"
+                                    | Result.Error s -> Result.Error s
+                                    | _ -> failwith "bonk"
+
+
+            match finalResult with
+            | Ok _ -> () |> ignore
+            | Result.Error s ->
+                printfn "Attendee status '%s'; removing event from Roommate's calendar" s
+                let req = calendarService.Events.Delete(calendarId, creationResult.Id)
+                let result = req.Execute()
+                printfn "deletion result '%s'" result
+            return finalResult
+
         }
 
     let editEvent (calendarService:CalendarService) calId event =
@@ -132,7 +156,8 @@ module GoogleCalendarClient =
 
             roommateEvent.Start.DateTime <- System.Nullable start
             roommateEvent.End.DateTime <- System.Nullable finish
-            return! editEvent calendarService roommateCalId roommateEvent
+            let! editResult = editEvent calendarService roommateCalId roommateEvent
+            return Ok editResult
         }
 
     let fetchEvents (calendarService:CalendarService) (LongCalId calendarId) =
