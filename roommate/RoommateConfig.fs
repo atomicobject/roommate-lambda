@@ -70,7 +70,7 @@ module RoommateConfig =
                 | None -> []
 
     let calIdFromURI (calURI:string) =
-        calURI.Split('/') |> List.ofArray |> List.find (fun x -> x.Contains "@")
+        calURI.Split('/') |> List.ofArray |> List.find (fun x -> x.Contains "atomicobject.com") |> LongCalId
 
     let shortName (calName:string) =
         calName.Split('(') |> List.ofArray |> List.head |> (fun s -> s.Trim())

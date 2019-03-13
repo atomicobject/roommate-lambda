@@ -60,7 +60,7 @@ type Functions() =
             |> function
                 | None -> Error  "No headers."
                 | Some h -> Ok h
-            |> Result.bind (calendarIdFromPushNotification logFn config)
+            |> Result.bind (FunctionImpls.calendarIdFromPushNotification logFn config)
 
         maybeCalendarId
             |> Result.bind (FunctionImpls.sendAnUpdateToCal logFn)
@@ -90,11 +90,12 @@ type Functions() =
         let startTime = request.start |> TimeUtil.dateTimeFromUnixTime
         let endTime   = request.finish |> TimeUtil.dateTimeFromUnixTime
 
-        sprintf "Reservation requested for boardId %s: %s -> %s" (request.boardId) (startTime.ToString()) (endTime.ToString()) |> context.Logger.LogLine
+        let logFn = context.Logger.LogLine
+
+        sprintf "Reservation requested for boardId %s: %s -> %s" (request.boardId) (startTime.ToString()) (endTime.ToString()) |> logFn
 
         let config = FunctionImpls.readConfig()
 
-        let logFn = context.Logger.LogLine
 
         request.boardId |> lookupCalendarForBoard config.roommateConfig
                         |> function

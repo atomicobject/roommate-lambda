@@ -17,24 +17,6 @@ module RoommateLogic =
         webhookUrl: string
     }
 
-    let calIdFromURI (calURI:string) =
-        calURI.Split('/') |> List.ofArray |> List.find (fun x -> x.Contains "atomicobject.com") |> LongCalId
-
-    let calendarIdFromPushNotification logFn (config:LambdaConfiguration) (pushNotificationHeaders:Map<string,string>) =
-
-        // https://developers.google.com/calendar/v3/push
-        pushNotificationHeaders
-        |> (fun h -> h |> Map.filter ( fun k _ -> k.Contains "Goog") |> Ok)
-        |> Result.map (fun gh ->
-            logFn "Received push notification! Google headers:"
-            gh |> Map.toList |> List.map (fun (k,v) -> sprintf "%s : %s" k v) |> List.iter logFn
-            gh)
-        |> Result.bind (fun gh ->
-                            match gh.TryFind "X-Goog-Resource-URI" with
-                            | None -> Error "No X-Google-Resource-ID header found."
-                            | Some resourceId -> Ok resourceId)
-        |> Result.map calIdFromURI
-
     let fetchEventsForCalendar logFn (config:LambdaConfiguration) calId =
         let (LongCalId s) = calId
         calId |> (fun calId ->
@@ -146,7 +128,7 @@ module RoommateLogic =
         }
         Ok (calendarId,msg)
 
-    let determineTopicsToPublishTo logFn (config:RoommateConfig) (calendarId:LongCalId,msg) =
+    let determineTopicsToPublishTo (config:RoommateConfig) (calendarId:LongCalId,msg) =
         let boardTopics = RoommateConfig.boardsForCalendar config calendarId
                             |> List.map (fun boardId -> sprintf "calendar-updates/for-board/%s" boardId)
         let calendarTopic = sprintf "calendar-updates/for-calendar/%s" (calendarId |> fun (LongCalId s) -> s)

@@ -31,7 +31,7 @@ module FunctionImpls =
         calId
             |> (fetchEventsForCalendar logFn config)
             |> Result.bind (mapEventsToMessage)
-            |> Result.bind (determineTopicsToPublishTo logFn config.roommateConfig)
+            |> Result.bind (determineTopicsToPublishTo config.roommateConfig)
             |> Result.bind (sendMessageToTopics logFn config.mqttEndpoint)
 
     let sendAnUpdateToBoard (boardId:string) logFn =
@@ -47,4 +47,18 @@ module FunctionImpls =
                 | Some calId -> Ok calId
             |> Result.bind (sendAnUpdateToCal logFn)
 
+    let calendarIdFromPushNotification logFn (config:LambdaConfiguration) (pushNotificationHeaders:Map<string,string>) =
+
+        // https://developers.google.com/calendar/v3/push
+        pushNotificationHeaders
+        |> (fun h -> h |> Map.filter ( fun k _ -> k.Contains "Goog") |> Ok)
+        |> Result.map (fun gh ->
+            logFn "Received push notification! Google headers:"
+            gh |> Map.toList |> List.map (fun (k,v) -> sprintf "%s : %s" k v) |> List.iter logFn
+            gh)
+        |> Result.bind (fun gh ->
+                            match gh.TryFind "X-Goog-Resource-URI" with
+                            | None -> Error "No X-Google-Resource-ID header found."
+                            | Some resourceId -> Ok resourceId)
+        |> Result.map calIdFromURI
 
