@@ -2,6 +2,7 @@ namespace Roommate
 
 module GoogleCalendarClient =
 
+    open System.Threading
     open System
     open System
     open Google.Apis.Auth.OAuth2
@@ -56,6 +57,10 @@ module GoogleCalendarClient =
                 |> Seq.map (fun item -> {calId=LongCalId item.Id;name=item.Summary})
         }
 
+    let singleAttendeesStatus (event:Event) =
+        // todo: fail if attendees length != 1
+        (event.Attendees.Item(0).ResponseStatus)
+
     let createEvent (calendarService:CalendarService) calendarId (LongCalId attendee) start finish =
         async {
             let start = new EventDateTime(DateTime = System.Nullable start)
@@ -70,7 +75,31 @@ module GoogleCalendarClient =
                             Description = "This event was created by the roommate system.\n\n(Just testing so far. Ask Jordan and John about it!)"
                             )
             let request = calendarService.Events.Insert(event, calendarId)
-            return! request.ExecuteAsync() |> Async.AwaitTask
+            let! creationResult = request.ExecuteAsync() |> Async.AwaitTask
+            let mutable latestResult = creationResult
+            printfn "Successfully created event on %s" calendarId
+            printfn "initial attendee response status %s" (creationResult.Attendees.Item(0).ResponseStatus)
+//            for i in [1..20] do
+            let mutable keepGoing = true
+            let mutable count = 0
+            let maxCount = 20
+            while keepGoing do
+                if count > maxCount then
+                    keepGoing <- false
+
+                let getRequest = calendarService.Events.Get(calendarId,creationResult.Id)
+                let newResult = getRequest.Execute()
+                let newStatus = singleAttendeesStatus newResult
+                printfn "new status: %s" (newResult.Attendees.Item(0).ResponseStatus)
+                if newStatus = "needsAction" then
+                    printfn "still waiting.."
+                    count <- count + 1
+                    Thread.Sleep(1000)
+                else
+                    printfn "new status! %s" newStatus
+                    keepGoing <- false
+
+            return creationResult
         }
 
     let editEvent (calendarService:CalendarService) calId event =
