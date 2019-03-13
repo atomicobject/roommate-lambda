@@ -14,7 +14,6 @@ open Roommate
 
  (*
      todo
-      - infer auth type from env vars
       - only require auth when the operation needs it
  *)
 
@@ -22,8 +21,11 @@ type AuthTypes =
     | ClientIdSecret
     | ServiceAccount
 
+type AuthCreds =
+    | ClientIdSecretCreds of clientId:string * clientSecret:string
+    | ServiceAccountCreds of serviceAccountEmail:string * serviceAccountPrivKey:string * serviceAccountAppName:string
+
 type CLIArguments =
-    | Auth of AuthTypes
     | Print_Ids
     | Fetch_Calendars
     | Fetch_Calendar of calendarName:string
@@ -41,7 +43,6 @@ with
     interface IArgParserTemplate with
         member s.Usage =
             match s with
-            | Auth _ -> "specify authentication mechanism"
             | Print_Ids -> "print available Google calendar IDs"
             | Lookup_CalId _ -> "lookup calendar ID for name substring"
             | Fetch_Calendars -> "retrieve events from all calendars"
@@ -63,11 +64,31 @@ let printUsageAndExamples (parser:ArgumentParser<CLIArguments>) results =
     printfn "%s" (parser.PrintUsage())
     printfn "EXAMPLES"
     printfn ""
-    printfn "%s\t        //print all calendar IDs visible to the account" (parser.PrintCommandLineArgumentsFlat [Auth ClientIdSecret; Print_Ids])
-    printfn "%s\t//fetch calendar events" (parser.PrintCommandLineArgumentsFlat [Auth ServiceAccount; Fetch_Calendar "eniac"])
+    printfn "%s\t        //print all calendar IDs visible to the account" (parser.PrintCommandLineArgumentsFlat [Print_Ids])
+    printfn "%s\t//fetch calendar events" (parser.PrintCommandLineArgumentsFlat [Fetch_Calendar "eniac"])
     printfn ""
     printfn "Authentication uses environment variables googleClientId/googleClientSecret or"
     printfn "serviceAccountEmail/serviceAccountAppName/serviceAccountPrivKey"
+
+let inferAuthTypeFromEnvVars () =
+    let envVars =
+        [ "serviceAccountEmail"
+          "serviceAccountPrivKey"
+          "serviceAccountAppName"
+          "googleClientId"
+          "googleClientSecret"
+        ] |> List.map readEnvVar
+    match envVars with
+    | [Some email; Some privKey; Some appName; None; None] -> ServiceAccountCreds (email, privKey, appName)
+    | [None; None; None; Some clientId; Some clientSecret] -> ClientIdSecretCreds (clientId, clientSecret)
+    | _ -> failwith "please specify either serviceAccountEmail/serviceAccountPrivKey/serviceAccountAppName or googleClientId/googleClientSecret"
+
+let calendarServiceForAuthType authType =
+    match authType with
+    | ServiceAccountCreds (email, privKey, appName) ->
+        GoogleCalendarClient.serviceAccountSignIn email privKey appName |> Async.RunSynchronously
+    | ClientIdSecretCreds (clientId, clientSecret) ->
+        GoogleCalendarClient.humanSignIn clientId clientSecret |> Async.RunSynchronously
 
 [<EntryPoint>]
 let main argv =
@@ -105,22 +126,8 @@ let main argv =
             printfn "result: %s" (serializeIndented result)
             Environment.Exit 0
 
-        let authType = results.TryGetResult Auth
-
-        let calendarService =
-            match authType with
-            | Some ServiceAccount ->
-                let serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
-                let serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
-                let serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
-                GoogleCalendarClient.serviceAccountSignIn serviceAccountEmail serviceAccountPrivKey serviceAccountAppName |> Async.RunSynchronously
-
-            | Some ClientIdSecret->
-                let googleClientId = readSecretFromEnv "googleClientId"
-                let googleClientSecret = readSecretFromEnv "googleClientSecret"
-                GoogleCalendarClient.humanSignIn googleClientId googleClientSecret |> Async.RunSynchronously
-
-            | _ ->  failwith "please specify an --auth type"
+        let authType = inferAuthTypeFromEnvVars ()
+        let calendarService = calendarServiceForAuthType authType
 
         if results.Contains Print_Ids then
             printfn "Retrieving meeting rooms (these can be pasted into config file).."
