@@ -61,9 +61,9 @@ module RoommateLogic =
         printfn "found %d roommate events." (roommateEvents |> Seq.length)
 
         let adjacentEvent = roommateEvents |> Seq.tryFind (fun e ->
-            printfn "checking event %s %s" (e.range.start.ToString("o")) (e.range.finish.ToString("o"))
+//            printfn "checking event %s %s" (e.range.start.ToString("o")) (e.range.finish.ToString("o"))
             let distance = (e.range.finish - desiredTimeRange.start).Duration()
-            printfn "it seems to be %s away from %s" (distance.ToString()) (desiredTimeRange.start.ToString("o"))
+//            printfn "it seems to be %s away from %s" (distance.ToString()) (desiredTimeRange.start.ToString("o"))
             distance < System.TimeSpan.FromMinutes 2.0
             )
 

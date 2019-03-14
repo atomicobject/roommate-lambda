@@ -145,6 +145,17 @@ module GoogleCalendarClient =
 
         }
 
+    let tryOrRevertEvent (calendarService:CalendarService) calId (event:Event) fn =
+        let originalEvent = calendarService.Events.Get(calId,event.Id).Execute()
+
+        let tryResult = fn ()
+
+        match tryResult with
+        | Ok x -> Ok x
+        | Error e ->
+            let restoredEvent = (calendarService.Events.Update(originalEvent,calId,originalEvent.Id)).Execute()
+            Result.Error e
+
     let editEvent (calendarService:CalendarService) calId event =
         async {
             (*
@@ -191,11 +202,12 @@ module GoogleCalendarClient =
         (a - b).Duration() < TimeSpan.FromMinutes(1.0)
 
     let containsAttendee (e:Event) roommateCalId =
-        printfn "event attendees:"
+//        printfn "event attendees:"
         e.Attendees |> Seq.map (fun a -> a.Email) |> Seq.reduce (sprintf "%s,%s") |> printfn "%s"
         e.Attendees |> Seq.tryFind(fun a -> a.Email = roommateCalId) |> (fun x -> x.IsSome)
 
     let editAssociatedEventLength (calendarService:CalendarService) roommateCalId roomCalId eventId (start:DateTime) (finish:DateTime) =
+        printfn "editAssociatedEventLength %s %s %s" roommateCalId roomCalId eventId
         async {
             let! roomEvent = calendarService.Events.Get(roomCalId,eventId).ExecuteAsync() |> Async.AwaitTask
             let roommateEventReq = calendarService.Events.List(roommateCalId)
