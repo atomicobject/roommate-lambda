@@ -61,29 +61,47 @@ module GoogleCalendarClient =
         // todo: handle attendees length != 1
         (event.Attendees.Item(0).ResponseStatus)
 
-    let pollForAttendee (calendarService:CalendarService) eventId calendarId =
+
+    let x () = Some 5
+
+    type PollResult<'T> =
+        | Success of 'T * int
+        | Timeout of int
+
+    let pollNTimesOrUntil (numTimes:int) (fn: (unit -> 'T option)) : PollResult<'T> =
         // todo: better
         let mutable keepGoing = true
         let mutable count = 0
-        let maxCount = 20
-        let mutable lastResult = None
+        let mutable result : 'T option = None
         while keepGoing do
-            if count > maxCount then
+            if count > numTimes then
                 keepGoing <- false
-
-            let getRequest = calendarService.Events.Get(calendarId,eventId)
-            lastResult <- Some (getRequest.Execute())
-            let newStatus = singleAttendeesStatus lastResult.Value
-            printfn "new status: %s" (lastResult.Value.Attendees.Item(0).ResponseStatus)
-            if newStatus = "needsAction" then
-                printfn "still waiting.."
-                count <- count + 1
-                Thread.Sleep(1000)
             else
-                keepGoing <- false
-        match lastResult with
-        | Some x -> Ok x
-        | None -> Result.Error "Error while polling"
+                count <- count + 1
+                result <- fn ()
+                if result |> Option.isSome then
+                    keepGoing <- false
+                else
+                    printfn "waiting.."
+                    Thread.Sleep(1000)
+
+        match result with
+        | None -> Timeout count
+        | Some x -> Success (x,count)
+
+    let pollForAttendee (calendarService:CalendarService) eventId calendarId =
+        let pollFn () =
+            let getRequest = calendarService.Events.Get(calendarId,eventId)
+            let result = getRequest.Execute()
+            let newStatus = singleAttendeesStatus result
+            match newStatus with
+            | "needsAction" -> None
+            | _ -> Some result
+        let pollResult = pollNTimesOrUntil 20 pollFn
+
+        match pollResult with
+        | Success (result,timeout) -> Ok result
+        | Timeout count -> Result.Error (sprintf "Timed out after %d tries" count)
 
     let createEvent (calendarService:CalendarService) calendarId (LongCalId attendee) start finish =
         async {
@@ -105,6 +123,7 @@ module GoogleCalendarClient =
             let latestResult = pollForAttendee calendarService creationResult.Id calendarId
 
 
+            let finalResult = latestResult
             let finalResult = latestResult
                                 |> Result.map singleAttendeesStatus
                                 |> function
