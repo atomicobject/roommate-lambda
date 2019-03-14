@@ -128,8 +128,44 @@ module GoogleCalendarClient =
 
     let editEvent (calendarService:CalendarService) calId event =
         async {
+            (*
+            plan:
+             - store original event start/end times
+             - pull target calendar ID from attendee
+             - query events from it within the time range of our event + 15 minutes
+             - if the only event is ours, capture its ID and proceed. else quit.
+             - edit roommate's event
+             - poll and check:
+               - attendee's status (to watch for "declined")
+               - attendee's event (to watch for it to grow)
+             - then, if:
+               - attendee's event grows to match roomate's event -> success
+               - status goes to declined ->
+                 - edit roommate event back to its original end time
+                 - log failure
+               - timeout ->
+                 - edit roommate event back to its original end time
+                 - log failure
+            *)
+
             let req = calendarService.Events.Update(event,calId,event.Id)
-            return! req.ExecuteAsync() |> Async.AwaitTask
+            let result = req.Execute()
+            printfn "\nattendee %s" (Newtonsoft.Json.JsonConvert.SerializeObject(result.Attendees.Item(0)))
+
+            let attendee_email = result.Attendees.Item(0).Email
+            let req2 = calendarService.Calendars.Get( attendee_email )
+            let cal2 = req2.Execute()
+            printfn "\nattendee calendar? %s" (Newtonsoft.Json.JsonConvert.SerializeObject(cal2))
+
+            let req3 = calendarService.Events.List(attendee_email)
+            req3.TimeMin <- System.Nullable(result.Start.DateTime.Value.AddDays(-1.0))
+            req3.TimeMax <- System.Nullable(result.Start.DateTime.Value.AddDays(1.0))
+            let events = req3.Execute()
+
+            printfn "\nattendee events %s"  (Newtonsoft.Json.JsonConvert.SerializeObject(events))
+
+
+            return result
         }
 
     let approxEqual (a:DateTime) (b:DateTime) =

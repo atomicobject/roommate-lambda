@@ -196,7 +196,7 @@ let main argv =
 
             match result with
             | Ok r ->
-                printfn "created:"
+                printfn "created: %s" (r.Id)
                 printfn ""
                 printfn "%s" (summarizeEvent r)
             | Error reason ->
