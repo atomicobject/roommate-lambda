@@ -111,5 +111,4 @@ module GoogleEventMapperTest =
         result |> should equal expected
 
 
-    // todo:
     // todo: all-day events (null start/endtime?)

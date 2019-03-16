@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="ReservationMakerTest.fs" />
     <Compile Include="RoommateLogicTest.fs" />
     <Compile Include="FakeBoardTest.fs" />
     <Compile Include="TimeUtilTest.fs" />

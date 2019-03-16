@@ -12,6 +12,7 @@
     <Compile Include="GoogleCalendarClient.fs" />
     <Compile Include="GoogleEventMapper.fs" />
     <Compile Include="RoommateLogic.fs" />
+    <Compile Include="ReservationMaker.fs" />
     <Compile Include="FakeBoard.fs" />
   </ItemGroup>
   <ItemGroup>
