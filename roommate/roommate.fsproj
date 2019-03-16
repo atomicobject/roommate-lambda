@@ -10,6 +10,7 @@
     <Compile Include="TimeUtil.fs" />
     <Compile Include="TermColors.fs" />
     <Compile Include="GoogleCalendarClient.fs" />
+    <Compile Include="GoogleEventMapper.fs" />
     <Compile Include="RoommateLogic.fs" />
     <Compile Include="FakeBoard.fs" />
   </ItemGroup>
