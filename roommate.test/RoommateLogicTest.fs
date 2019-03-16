@@ -4,7 +4,7 @@ open Xunit
 open FsUnit
 open Roommate
 
-module CalendarWatcherTest =
+module RoommateLogicTest =
     open Google.Apis.Calendar.v3.Data
     open Roommate
     open Roommate.RoommateLogic
