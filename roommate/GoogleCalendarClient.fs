@@ -212,24 +212,12 @@ module GoogleCalendarClient =
         async {
             // first we get the event from the target room's calendar
             let! roomEvent = calendarService.Events.Get(roomCalId,roommateEventId).ExecuteAsync() |> Async.AwaitTask
-            let roommateEventReq = calendarService.Events.List(roommateCalId)
-            roommateEventReq.TimeMin <- (roomEvent.Start.DateTime)
-            roommateEventReq.MaxResults <- Nullable 50
-            let! roommateEvents = roommateEventReq.ExecuteAsync() |> Async.AwaitTask
+            let roommateEvent = calendarService.Events.Get(roommateCalId,roommateEventId).Execute()
 
-            printfn "room event %s" (Newtonsoft.Json.JsonConvert.SerializeObject(roomEvent))
-//            printfn "looking for attendee %s" roomCalId
+//            printfn "room event %s" (Newtonsoft.Json.JsonConvert.SerializeObject(roomEvent))
+//            printfn "roommate event: %s" (Newtonsoft.Json.JsonConvert.SerializeObject(roommateEvent))
 
-            // then we query events on the _roommate_ calendar that has this room as an attendee
-            let eventsWithAttendee= roommateEvents.Items |> Seq.where (fun e -> containsAttendee e roomCalId)
-            printfn "found %d events with attendee" (eventsWithAttendee |> Seq.length)
-            let roommateEvent = eventsWithAttendee |> Seq.find (fun e -> (approxEqual e.Start.DateTime.Value roomEvent.Start.DateTime.Value) && (approxEqual e.End.DateTime.Value roomEvent.End.DateTime.Value))
-            printfn "found the event! %s" (Newtonsoft.Json.JsonConvert.SerializeObject(roommateEvent))
-
-            let roommateEvent2 = calendarService.Events.Get(roommateCalId,roommateEventId).Execute()
-            printfn "or, fetched directly: %s" (Newtonsoft.Json.JsonConvert.SerializeObject(roommateEvent2))
-
-            // and edit _that_ event (which will send an update to the room, which may accept/decline the change)
+            // edit the event (which will send an update to the room, which may accept/decline the change)
             roommateEvent.Start.DateTime <- System.Nullable start
             roommateEvent.End.DateTime <- System.Nullable finish
             let! editResult = editEvent calendarService roommateCalId roommateEvent
