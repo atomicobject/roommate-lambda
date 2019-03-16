@@ -2,6 +2,7 @@ namespace Roommate
 
 module GoogleCalendarClient =
 
+    open System.Threading
     open System
     open System
     open Google.Apis.Auth.OAuth2
@@ -56,6 +57,52 @@ module GoogleCalendarClient =
                 |> Seq.map (fun item -> {calId=LongCalId item.Id;name=item.Summary})
         }
 
+    let singleAttendeesStatus (event:Event) =
+        // todo: handle attendees length != 1
+        (event.Attendees.Item(0).ResponseStatus)
+
+
+    let x () = Some 5
+
+    type PollResult<'T> =
+        | Success of 'T * int
+        | Timeout of int
+
+    let pollNTimesOrUntil (numTimes:int) (fn: (unit -> 'T option)) : PollResult<'T> =
+        // todo: better
+        let mutable keepGoing = true
+        let mutable count = 0
+        let mutable result : 'T option = None
+        while keepGoing do
+            if count > numTimes then
+                keepGoing <- false
+            else
+                count <- count + 1
+                result <- fn ()
+                if result |> Option.isSome then
+                    keepGoing <- false
+                else
+                    printfn "waiting.."
+                    Thread.Sleep(1000)
+
+        match result with
+        | None -> Timeout count
+        | Some x -> Success (x,count)
+
+    let pollForAttendee (calendarService:CalendarService) eventId calendarId =
+        let pollFn () =
+            let getRequest = calendarService.Events.Get(calendarId,eventId)
+            let result = getRequest.Execute()
+            let newStatus = singleAttendeesStatus result
+            match newStatus with
+            | "needsAction" -> None
+            | _ -> Some result
+        let pollResult = pollNTimesOrUntil 20 pollFn
+
+        match pollResult with
+        | Success (result,timeout) -> Ok result
+        | Timeout count -> Result.Error (sprintf "Timed out after %d tries" count)
+
     let createEvent (calendarService:CalendarService) calendarId (LongCalId attendee) start finish =
         async {
             let start = new EventDateTime(DateTime = System.Nullable start)
@@ -70,40 +117,111 @@ module GoogleCalendarClient =
                             Description = "This event was created by the roommate system.\n\n(Just testing so far. Ask Jordan and John about it!)"
                             )
             let request = calendarService.Events.Insert(event, calendarId)
-            return! request.ExecuteAsync() |> Async.AwaitTask
+            let! creationResult = request.ExecuteAsync() |> Async.AwaitTask
+            printfn "Successfully created event on %s" calendarId
+            printfn "initial attendee response status %s" (creationResult.Attendees.Item(0).ResponseStatus)
+            let latestResult = pollForAttendee calendarService creationResult.Id calendarId
+
+
+            let finalResult = latestResult
+            let finalResult = latestResult
+                                |> Result.map singleAttendeesStatus
+                                |> function
+                                    | Ok "needsAction" -> Result.Error "timed out, apparently"
+                                    | Ok "accepted" -> Result.Ok creationResult
+                                    | Ok "declined" -> Result.Error "declined"
+                                    | Result.Error s -> Result.Error s
+                                    | _ -> failwith "bonk"
+
+
+            match finalResult with
+            | Ok _ -> () |> ignore
+            | Result.Error s ->
+                printfn "Attendee status '%s'; removing event from Roommate's calendar" s
+                let req = calendarService.Events.Delete(calendarId, creationResult.Id)
+                let result = req.Execute()
+                printfn "deletion result '%s'" result
+            return finalResult
+
         }
+
+    let tryOrRevertEvent (calendarService:CalendarService) calId (event:Event) fn =
+        let originalEvent = calendarService.Events.Get(calId,event.Id).Execute()
+
+        let tryResult = fn ()
+
+        match tryResult with
+        | Ok x -> Ok x
+        | Error e ->
+            let restoredEvent = (calendarService.Events.Update(originalEvent,calId,originalEvent.Id)).Execute()
+            printfn "Restored event %s to %s-%s" (restoredEvent.Id) (restoredEvent.Start.ToString()) (restoredEvent.End.ToString())
+            Result.Error e
 
     let editEvent (calendarService:CalendarService) calId event =
         async {
+            (*
+            plan:
+             - store original event start/end times
+             - pull target calendar ID from attendee
+             - query events from it within the time range of our event + 15 minutes
+             - if the only event is ours, capture its ID and proceed. else quit.
+             - edit roommate's event
+             - poll and check:
+               - attendee's status (to watch for "declined")
+               - attendee's event (to watch for it to grow)
+             - then, if:
+               - attendee's event grows to match roomate's event -> success
+               - status goes to declined ->
+                 - edit roommate event back to its original end time
+                 - log failure
+               - timeout ->
+                 - edit roommate event back to its original end time
+                 - log failure
+            *)
+
             let req = calendarService.Events.Update(event,calId,event.Id)
-            return! req.ExecuteAsync() |> Async.AwaitTask
+            let result = req.Execute()
+            printfn "\nattendee %s" (Newtonsoft.Json.JsonConvert.SerializeObject(result.Attendees.Item(0)))
+
+            let attendee_email = result.Attendees.Item(0).Email
+            let req2 = calendarService.Calendars.Get( attendee_email )
+            let cal2 = req2.Execute()
+            printfn "\nattendee calendar? %s" (Newtonsoft.Json.JsonConvert.SerializeObject(cal2))
+
+            let req3 = calendarService.Events.List(attendee_email)
+            req3.TimeMin <- System.Nullable(result.Start.DateTime.Value.AddDays(-1.0))
+            req3.TimeMax <- System.Nullable(result.Start.DateTime.Value.AddDays(1.0))
+            let events = req3.Execute()
+
+            printfn "\nattendee events %s"  (Newtonsoft.Json.JsonConvert.SerializeObject(events))
+
+
+            return result
         }
 
     let approxEqual (a:DateTime) (b:DateTime) =
         (a - b).Duration() < TimeSpan.FromMinutes(1.0)
 
     let containsAttendee (e:Event) roommateCalId =
-        printfn "event attendees:"
+//        printfn "event attendees:"
         e.Attendees |> Seq.map (fun a -> a.Email) |> Seq.reduce (sprintf "%s,%s") |> printfn "%s"
         e.Attendees |> Seq.tryFind(fun a -> a.Email = roommateCalId) |> (fun x -> x.IsSome)
 
-    let editAssociatedEventLength (calendarService:CalendarService) roommateCalId roomCalId eventId (start:DateTime) (finish:DateTime) =
+    let editAssociatedEventLength (calendarService:CalendarService) roommateCalId roomCalId roommateEventId (start:DateTime) (finish:DateTime) =
+        printfn "editAssociatedEventLength %s %s %s" roommateCalId roomCalId roommateEventId
         async {
-            let! roomEvent = calendarService.Events.Get(roomCalId,eventId).ExecuteAsync() |> Async.AwaitTask
-            let roommateEventReq = calendarService.Events.List(roommateCalId)
-            roommateEventReq.TimeMin <- (roomEvent.Start.DateTime)
-            roommateEventReq.MaxResults <- Nullable 50
-            let! roommateEvents = roommateEventReq.ExecuteAsync() |> Async.AwaitTask
+            // first we get the event from the target room's calendar
+            let! roomEvent = calendarService.Events.Get(roomCalId,roommateEventId).ExecuteAsync() |> Async.AwaitTask
+            let roommateEvent = calendarService.Events.Get(roommateCalId,roommateEventId).Execute()
 
-//            printfn "looking for attendee %s" roomCalId
-            let eventsWithAttendee= roommateEvents.Items |> Seq.where (fun e -> containsAttendee e roomCalId)
-            printfn "found %d events with attendee" (eventsWithAttendee |> Seq.length)
-            let roommateEvent = eventsWithAttendee |> Seq.find (fun e -> (approxEqual e.Start.DateTime.Value roomEvent.Start.DateTime.Value) && (approxEqual e.End.DateTime.Value roomEvent.End.DateTime.Value))
-            printfn "found the event! %s" (roommateEvent.ToString())
+//            printfn "room event %s" (Newtonsoft.Json.JsonConvert.SerializeObject(roomEvent))
+//            printfn "roommate event: %s" (Newtonsoft.Json.JsonConvert.SerializeObject(roommateEvent))
 
+            // edit the event (which will send an update to the room, which may accept/decline the change)
             roommateEvent.Start.DateTime <- System.Nullable start
             roommateEvent.End.DateTime <- System.Nullable finish
-            return! editEvent calendarService roommateCalId roommateEvent
+            let! editResult = editEvent calendarService roommateCalId roommateEvent
+            return Ok editResult
         }
 
     let fetchEvents (calendarService:CalendarService) (LongCalId calendarId) =

@@ -23,42 +23,10 @@ type Functions() =
         |> Seq.map (|KeyValue|)
         |> Map.ofSeq
 
-    let readConfig () : LambdaConfiguration =
-        {
-            roommateConfig = readSecretFromEnv "roommateConfig" |> RoommateConfig.deserializeConfig
-            serviceAccountEmail = readSecretFromEnv "serviceAccountEmail"
-            serviceAccountPrivKey = readSecretFromEnv "serviceAccountPrivKey"
-            serviceAccountAppName = readSecretFromEnv "serviceAccountAppName"
-            mqttEndpoint = readSecretFromEnv "mqttEndpoint"
-            webhookUrl = readSecretFromEnv "webhookUrl"
-        }
-
-    let sendAnUpdate (boardId:string) (context:ILambdaContext) =
-
-        sprintf "Sending an update for %s" boardId |> context.Logger.LogLine
-
-        let config = readConfig()
-
-        let logFn = context.Logger.LogLine
-
-        boardId |> lookupCalendarForBoard config.roommateConfig
-                        |> function
-                            | None -> Error  "Unknown board"
-                            | Some calId -> Ok calId
-                        |> Result.bind (fetchEventsForCalendar logFn config)
-                        |> Result.bind (mapEventsToMessage)
-                        |> Result.bind (determineTopicsToPublishTo logFn config.roommateConfig)
-                        |> Result.bind (sendMessageToTopics logFn config.mqttEndpoint)
-                        |> function
-                            | Error e -> logFn e
-                            | _ -> ()
-        ()
-
     member __.Get (request: APIGatewayProxyRequest) (context: ILambdaContext) =
         let verificationCode = readSecretFromEnv "GOOGLE_VERIFICATION_CODE"
 
-        sprintf "Request: %s" request.Path
-        |> context.Logger.LogLine
+        sprintf "Request: %s" request.Path |> context.Logger.LogLine
 
         let htmlBody = sprintf
                         """
@@ -81,19 +49,21 @@ type Functions() =
     member __.CalendarUpdate (request: APIGatewayProxyRequest) (context: ILambdaContext) =
         sprintf "Request: %s" request.Path |> context.Logger.LogLine
 
-        let config = readConfig()
+        let config = FunctionImpls.readConfig()
 
         let logFn = context.Logger.LogLine
 
-        request.Headers |> Option.ofObj |> Option.map toMap
+        let maybeCalendarId =
+            request.Headers
+            |> Option.ofObj
+            |> Option.map toMap
             |> function
                 | None -> Error  "No headers."
                 | Some h -> Ok h
-            |> Result.bind (calendarIdFromPushNotification logFn config)
-            |> Result.bind (fetchEventsForCalendar logFn config)
-            |> Result.bind (mapEventsToMessage)
-            |> Result.bind (determineTopicsToPublishTo logFn config.roommateConfig)
-            |> Result.bind (sendMessageToTopics logFn config.mqttEndpoint)
+            |> Result.bind (FunctionImpls.calendarIdFromPushNotification logFn config)
+
+        maybeCalendarId
+            |> Result.bind (FunctionImpls.sendAnUpdateToCal logFn)
             |> function
                 | Error e -> logFn e
                 | _ -> ()
@@ -105,38 +75,41 @@ type Functions() =
             Headers = dict [ ("Content-Type", "text/plain") ]
         )
 
+
+    member __.OnDeviceConnect (request: Messages.DeviceConnect) (context: ILambdaContext) =
+        sprintf "Device Connected! %s" (request.clientId) |> context.Logger.LogLine
+
+        FunctionImpls.sendAnUpdateToBoard request.clientId context.Logger.LogLine
+
     member __.UpdateRequest (request: Messages.UpdateRequest) (context: ILambdaContext) =
         sprintf "Updated requested for boardId %s" (request.boardId) |> context.Logger.LogLine
-        sendAnUpdate request.boardId context
+
+        FunctionImpls.sendAnUpdateToBoard request.boardId context.Logger.LogLine
 
     member __.ReservationRequest (request: Messages.ReservationRequest) (context: ILambdaContext) =
         let startTime = request.start |> TimeUtil.dateTimeFromUnixTime
         let endTime   = request.finish |> TimeUtil.dateTimeFromUnixTime
 
-        sprintf "Reservation requested for boardId %s: %s -> %s" (request.boardId) (startTime.ToString()) (endTime.ToString()) |> context.Logger.LogLine
-
-        let config = readConfig()
-
         let logFn = context.Logger.LogLine
+
+        sprintf "Reservation requested for boardId %s: %s -> %s" (request.boardId) (startTime.ToString()) (endTime.ToString()) |> logFn
+
+        let config = FunctionImpls.readConfig()
 
         request.boardId |> lookupCalendarForBoard config.roommateConfig
                         |> function
                             | None -> Error  "Unknown board"
                             | Some calId -> Ok calId
                         |> Result.bind (createCalendarEvent logFn config startTime endTime)
+                        |> Result.bind (fun _ -> FunctionImpls.sendAnUpdateToBoard request.boardId logFn)
                         |> function
                             | Error e -> logFn e
                             | _ -> ()
         ()
 
-    member __.OnDeviceConnect (request: Messages.DeviceConnect) (context: ILambdaContext) =
-        sprintf "Device Connected! %s" (request.clientId) |> context.Logger.LogLine
-
-        sendAnUpdate request.clientId context
-
     member __.RenewWebhooks (event:Amazon.Lambda.CloudWatchEvents.ScheduledEvents.ScheduledEvent) (context:ILambdaContext) =
         let logFn = context.Logger.LogLine
-        let config = readConfig()
+        let config = FunctionImpls.readConfig()
         logFn (sprintf "event: %s" (Newtonsoft.Json.JsonConvert.SerializeObject(event)))
         logFn (sprintf "context: %s" (Newtonsoft.Json.JsonConvert.SerializeObject(context)))
         logFn (sprintf "webhook URL: %s" config.webhookUrl)

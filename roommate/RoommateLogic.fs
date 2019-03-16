@@ -17,24 +17,6 @@ module RoommateLogic =
         webhookUrl: string
     }
 
-    let calIdFromURI (calURI:string) =
-        calURI.Split('/') |> List.ofArray |> List.find (fun x -> x.Contains "atomicobject.com") |> LongCalId
-
-    let calendarIdFromPushNotification logFn (config:LambdaConfiguration) (pushNotificationHeaders:Map<string,string>) =
-
-        // https://developers.google.com/calendar/v3/push
-        pushNotificationHeaders
-        |> (fun h -> h |> Map.filter ( fun k _ -> k.Contains "Goog") |> Ok)
-        |> Result.map (fun gh ->
-            logFn "Received push notification! Google headers:"
-            gh |> Map.toList |> List.map (fun (k,v) -> sprintf "%s : %s" k v) |> List.iter logFn
-            gh)
-        |> Result.bind (fun gh ->
-                            match gh.TryFind "X-Goog-Resource-URI" with
-                            | None -> Error "No X-Google-Resource-ID header found."
-                            | Some resourceId -> Ok resourceId)
-        |> Result.map calIdFromURI
-
     let fetchEventsForCalendar logFn (config:LambdaConfiguration) calId =
         let (LongCalId s) = calId
         calId |> (fun calId ->
@@ -78,10 +60,9 @@ module RoommateLogic =
 
         printfn "found %d roommate events." (roommateEvents |> Seq.length)
 
+        // todo: Seq.where (there may be multiple!)
         let adjacentEvent = roommateEvents |> Seq.tryFind (fun e ->
-            printfn "checking event %s %s" (e.range.start.ToString("o")) (e.range.finish.ToString("o"))
             let distance = (e.range.finish - desiredTimeRange.start).Duration()
-            printfn "it seems to be %s away from %s" (distance.ToString()) (desiredTimeRange.start.ToString("o"))
             distance < System.TimeSpan.FromMinutes 2.0
             )
 
@@ -92,7 +73,7 @@ module RoommateLogic =
         else if desiredTimeRange.start > (System.DateTime.UtcNow.AddHours 3.0) then
             (Nothing "cannot create event >3 hours in the future")
         else if adjacentEvent.IsSome then
-            printfn "found adjacent event %s-%s" (adjacentEvent.Value.range.start.ToString()) (adjacentEvent.Value.range.finish.ToString())
+            printfn "found event on roommate's calendar adjacent to requested range."
             (UpdateEvent (adjacentEvent.Value.gcalId,adjacentEvent.Value.range.start,desiredTimeRange.finish))
         else if (events |> List.tryFind (fun e -> timeRangeIntersects e.range desiredTimeRange)).IsSome then
             (Nothing "busy")
@@ -146,7 +127,7 @@ module RoommateLogic =
         }
         Ok (calendarId,msg)
 
-    let determineTopicsToPublishTo logFn (config:RoommateConfig) (calendarId:LongCalId,msg) =
+    let determineTopicsToPublishTo (config:RoommateConfig) (calendarId:LongCalId,msg) =
         let boardTopics = RoommateConfig.boardsForCalendar config calendarId
                             |> List.map (fun boardId -> sprintf "calendar-updates/for-board/%s" boardId)
         let calendarTopic = sprintf "calendar-updates/for-calendar/%s" (calendarId |> fun (LongCalId s) -> s)
