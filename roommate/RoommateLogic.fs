@@ -60,10 +60,9 @@ module RoommateLogic =
 
         printfn "found %d roommate events." (roommateEvents |> Seq.length)
 
+        // todo: Seq.where (there may be multiple!)
         let adjacentEvent = roommateEvents |> Seq.tryFind (fun e ->
-//            printfn "checking event %s %s" (e.range.start.ToString("o")) (e.range.finish.ToString("o"))
             let distance = (e.range.finish - desiredTimeRange.start).Duration()
-//            printfn "it seems to be %s away from %s" (distance.ToString()) (desiredTimeRange.start.ToString("o"))
             distance < System.TimeSpan.FromMinutes 2.0
             )
 
@@ -74,7 +73,7 @@ module RoommateLogic =
         else if desiredTimeRange.start > (System.DateTime.UtcNow.AddHours 3.0) then
             (Nothing "cannot create event >3 hours in the future")
         else if adjacentEvent.IsSome then
-            printfn "found adjacent event %s-%s" (adjacentEvent.Value.range.start.ToString()) (adjacentEvent.Value.range.finish.ToString())
+            printfn "found event on roommate's calendar adjacent to requested range."
             (UpdateEvent (adjacentEvent.Value.gcalId,adjacentEvent.Value.range.start,desiredTimeRange.finish))
         else if (events |> List.tryFind (fun e -> timeRangeIntersects e.range desiredTimeRange)).IsSome then
             (Nothing "busy")

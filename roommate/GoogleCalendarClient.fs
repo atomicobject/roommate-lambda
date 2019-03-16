@@ -154,6 +154,7 @@ module GoogleCalendarClient =
         | Ok x -> Ok x
         | Error e ->
             let restoredEvent = (calendarService.Events.Update(originalEvent,calId,originalEvent.Id)).Execute()
+            printfn "Restored event %s to %s-%s" (restoredEvent.Id) (restoredEvent.Start.ToString()) (restoredEvent.End.ToString())
             Result.Error e
 
     let editEvent (calendarService:CalendarService) calId event =
@@ -206,23 +207,27 @@ module GoogleCalendarClient =
         e.Attendees |> Seq.map (fun a -> a.Email) |> Seq.reduce (sprintf "%s,%s") |> printfn "%s"
         e.Attendees |> Seq.tryFind(fun a -> a.Email = roommateCalId) |> (fun x -> x.IsSome)
 
-    let editAssociatedEventLength (calendarService:CalendarService) roommateCalId roomCalId eventId (start:DateTime) (finish:DateTime) =
-        printfn "editAssociatedEventLength %s %s %s" roommateCalId roomCalId eventId
+    let editAssociatedEventLength (calendarService:CalendarService) roommateCalId roomCalId roommateEventId (start:DateTime) (finish:DateTime) =
+        printfn "editAssociatedEventLength %s %s %s" roommateCalId roomCalId roommateEventId
         async {
             // first we get the event from the target room's calendar
-            let! roomEvent = calendarService.Events.Get(roomCalId,eventId).ExecuteAsync() |> Async.AwaitTask
+            let! roomEvent = calendarService.Events.Get(roomCalId,roommateEventId).ExecuteAsync() |> Async.AwaitTask
             let roommateEventReq = calendarService.Events.List(roommateCalId)
             roommateEventReq.TimeMin <- (roomEvent.Start.DateTime)
             roommateEventReq.MaxResults <- Nullable 50
             let! roommateEvents = roommateEventReq.ExecuteAsync() |> Async.AwaitTask
 
+            printfn "room event %s" (Newtonsoft.Json.JsonConvert.SerializeObject(roomEvent))
 //            printfn "looking for attendee %s" roomCalId
 
             // then we query events on the _roommate_ calendar that has this room as an attendee
             let eventsWithAttendee= roommateEvents.Items |> Seq.where (fun e -> containsAttendee e roomCalId)
             printfn "found %d events with attendee" (eventsWithAttendee |> Seq.length)
             let roommateEvent = eventsWithAttendee |> Seq.find (fun e -> (approxEqual e.Start.DateTime.Value roomEvent.Start.DateTime.Value) && (approxEqual e.End.DateTime.Value roomEvent.End.DateTime.Value))
-            printfn "found the event! %s" (roommateEvent.ToString())
+            printfn "found the event! %s" (Newtonsoft.Json.JsonConvert.SerializeObject(roommateEvent))
+
+            let roommateEvent2 = calendarService.Events.Get(roommateCalId,roommateEventId).Execute()
+            printfn "or, fetched directly: %s" (Newtonsoft.Json.JsonConvert.SerializeObject(roommateEvent2))
 
             // and edit _that_ event (which will send an update to the room, which may accept/decline the change)
             roommateEvent.Start.DateTime <- System.Nullable start
