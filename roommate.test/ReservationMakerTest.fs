@@ -8,7 +8,7 @@ module ReservationMakerTest =
     open ReservationMaker
 
     [<Fact>]
-    let ``plans to create event when both calendars are empty``() =
+    let ``creates event when calendar is empty``() =
         let input: InputInformation = {
             ConferenceRoomAccountEvents = []
             RequestedTimeRange = {

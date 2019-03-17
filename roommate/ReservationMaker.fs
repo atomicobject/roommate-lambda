@@ -40,24 +40,29 @@ module ReservationMaker =
         | ExtendEvent of EventExtension
 
 
-    let planOperation (input: InputInformation) (roommateAccountEmail:string): ProcessResult =
-        let intersectsRequestedRange = timeRangeIntersects input.RequestedTimeRange
-        let overlap = input.ConferenceRoomAccountEvents |> Seq.map (fun e -> e.timeRange) |> Seq.tryFind intersectsRequestedRange
+    let getAdjacentRoommateEvents input roommateAccountEmail =
         let isCloseTo (a:System.DateTime) (b:System.DateTime) =
             (a-b).Duration() < System.TimeSpan.FromMinutes 2.0
         let isCloseToRequestedStart = isCloseTo input.RequestedTimeRange.start
-        let adjacentRoommateEvents = input.ConferenceRoomAccountEvents
-                                    |> Seq.where (fun e -> e.creatorEmail = roommateAccountEmail)
-                                    |> Seq.where (fun e -> isCloseToRequestedStart e.timeRange.finish)
+        input.ConferenceRoomAccountEvents
+            |> List.where (fun e -> e.creatorEmail = roommateAccountEmail)
+            |> List.where (fun e -> isCloseToRequestedStart e.timeRange.finish)
 
-        match overlap, (adjacentRoommateEvents |> Seq.length) with
+    let getFirstConflictingEvent input =
+        let intersectsRequestedRange = timeRangeIntersects input.RequestedTimeRange
+        input.ConferenceRoomAccountEvents |> Seq.map (fun e -> e.timeRange) |> Seq.tryFind intersectsRequestedRange
+
+    let planOperation (input: InputInformation) (roommateAccountEmail:string): ProcessResult =
+        let conflictingEvent = getFirstConflictingEvent input
+        let adjacentRoommateEvents = getAdjacentRoommateEvents input roommateAccountEmail
+
+        match conflictingEvent, adjacentRoommateEvents with
         | (Some _),_ -> DoNothing "Room is booked during that time."
-        | None,0 -> CreateNewEvent input.RequestedTimeRange
-        | None,1 ->
-            let eventToExtend = adjacentRoommateEvents |> Seq.head
+        | None,[] -> CreateNewEvent input.RequestedTimeRange
+        | None,[eventToExtend] ->
             ExtendEvent {eventId = eventToExtend.gCalId;newRange={start=eventToExtend.timeRange.start;finish=input.RequestedTimeRange.finish}}
         | None,x ->
-            printfn "Found %d candidate events to extend. Giving up and creating a new one." x
+            printfn "Found %d candidate events to extend. Giving up and creating a new one." x.Length
             CreateNewEvent input.RequestedTimeRange
 
 

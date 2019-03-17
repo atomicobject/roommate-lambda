@@ -267,7 +267,7 @@ let main argv =
 //            printfn "%s" (Newtonsoft.Json.JsonConvert.SerializeObject(events))
 
             let operation = ReservationMaker.planOperation {ConferenceRoomAccountEvents=events;RequestedTimeRange=desiredMeetingTime} roommateAccountEmail
-            printfn "selected operation %s" (operation.ToString())
+            printfn "selected operation: %s" (operation.ToString())
             ()
 
         if results.Contains Push_Button then
