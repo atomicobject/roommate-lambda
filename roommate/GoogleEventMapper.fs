@@ -11,8 +11,7 @@ module GoogleEventMapper =
     }
     type RoommateEvent = {
         gCalId: string
-        startTime: System.DateTime
-        endTime: System.DateTime
+        timeRange: TimeUtil.TimeRange
         creatorEmail: string
         attendees: RoommateEventAttendee list
         } // attendees - name, email, responseStatus
@@ -21,8 +20,10 @@ module GoogleEventMapper =
     let mapEvent (event: Event): RoommateEvent =
         {
             gCalId = event.Id
-            startTime = event.Start.DateTime.Value
-            endTime = event.End.DateTime.Value
+            timeRange = {
+                start = event.Start.DateTime.Value
+                finish = event.End.DateTime.Value
+            }
             creatorEmail = event.Creator.Email
             attendees = event.Attendees |> List.ofSeq |> List.map (fun a -> {
                 name = a.DisplayName

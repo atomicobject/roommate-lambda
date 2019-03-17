@@ -228,9 +228,10 @@ module GoogleCalendarClient =
         async {
             let request = calendarService.Events.List(calendarId)
             request.TimeMin <-System.Nullable DateTime.Now
+            request.TimeMax <- System.Nullable (DateTime.Now.AddDays(1.0))
             request.ShowDeleted <- System.Nullable false
             request.SingleEvents <- System.Nullable true
-            request.MaxResults <- System.Nullable 10
+//            request.MaxResults <- System.Nullable 10
             request.OrderBy <- System.Nullable EventsResource.ListRequest.OrderByEnum.StartTime
 
             return! request.ExecuteAsync() |> Async.AwaitTask

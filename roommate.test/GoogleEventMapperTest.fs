@@ -99,8 +99,10 @@ module GoogleEventMapperTest =
         let result = GoogleEventMapper.mapEvent event
         let expected: GoogleEventMapper.RoommateEvent = {
             gCalId = "123123123id"
-            startTime = System.DateTime.Parse("03/15/2019 23:00:01")
-            endTime = System.DateTime.Parse("03/15/2019 23:14:59")
+            timeRange = {
+                start = System.DateTime.Parse("03/15/2019 23:00:01")
+                finish = System.DateTime.Parse("03/15/2019 23:14:59")
+            }
             creatorEmail = "foobar@foobar-12345.iam.gserviceaccount.com"
             attendees = [{
                 name = "conference-room-name"

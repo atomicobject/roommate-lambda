@@ -38,6 +38,7 @@ type CLIArguments =
     | Mqtt_Publish of topic:string * message:string
     | Fake_Board of room:string
     | Push_Button of room:string
+    | Reserve_Room of room:string
 
 with
     interface IArgParserTemplate with
@@ -54,7 +55,8 @@ with
             | Update_Event _ -> "update event (extend it by 15min)"
             | Mqtt_Publish _ -> "publish message to MQTT topic"
             | Fake_Board _ -> "simulate board state for given room"
-            | Push_Button _ -> "simulate pushing button on board assigned to given room (request a reservation)"
+            | Push_Button _ -> "simulate pushing button on board assigned to given room (sends a reservation request message)"
+            | Reserve_Room _ -> "reserve room (run backend logic locally)"
 
 
 let CONFIG_FILENAME = "roommate.json"
@@ -224,39 +226,64 @@ let main argv =
             |> fun (name,LongCalId calId) -> printfn "%s\n%s" name calId
             ()
 
+        let lightsForRoom room =
+            room
+            |> fun room -> printf "%s\t" room.name; room.calendarId
+            |> GoogleCalendarClient.fetchEvents calendarService
+            |> Async.RunSynchronously
+            |> fun x -> x.Items
+            |> Seq.map RoommateLogic.transformEvent
+            |> List.ofSeq
+            |> getLights
+
         if results.Contains Fake_Board then
-            let lights =
-                        results.GetResult Fake_Board
-                        |> RoommateConfig.looukpCalByName config
-                        |> fun room -> printf "%s\t" room.name; room.calendarId
-                        |> GoogleCalendarClient.fetchEvents calendarService
-                        |> Async.RunSynchronously
-                        |> fun x -> x.Items
-                        |> Seq.map RoommateLogic.transformEvent
-                        |> List.ofSeq
-                        |> getLights
+            let room = results.GetResult Fake_Board |> RoommateConfig.looukpCalByName config
+            let lights = lightsForRoom room
 
             printLights lights
             printfn ""
 
+
+        let logDesiredMeetingTime (mt:DesiredMeetingTime) =
+            match mt with
+            | None ->
+                printfn "room booked solid! no slots available."
+            | Some (range,pos)->
+                printf "\trequesting %d:%d - %d:%d (light #%d)..\t" range.start.Hour range.start.Minute range.finish.Hour range.finish.Minute pos
+            mt
+
+        if results.Contains Reserve_Room then
+            let room = results.GetResult Reserve_Room |> RoommateConfig.looukpCalByName config
+            let lights = lightsForRoom room
+            let desiredMeetingTime = chooseNextTime lights
+                                        |> logDesiredMeetingTime
+                                        |> function
+                                        | None -> failwith "exiting."
+                                        | Some (range,_) -> range
+
+            let events = GoogleCalendarClient.fetchEvents calendarService room.calendarId
+                            |> Async.RunSynchronously |> (fun g -> g.Items)
+                            |> List.ofSeq
+                            |> List.map GoogleEventMapper.mapEvent
+
+//            printfn "%s" (Newtonsoft.Json.JsonConvert.SerializeObject(events))
+
+            let operation = ReservationMaker.planOperation {ConferenceRoomAccountEvents=events;RequestedTimeRange=desiredMeetingTime}
+            printfn "selected operation %s" (operation.ToString())
+            ()
+
         if results.Contains Push_Button then
             let room = results.GetResult Push_Button |> RoommateConfig.looukpCalByName config
-            printf "%s\t" room.name
-            let lights = room.calendarId
-                        |> GoogleCalendarClient.fetchEvents calendarService
-                        |> Async.RunSynchronously
-                        |> fun x -> x.Items
-                        |> Seq.map RoommateLogic.transformEvent
-                        |> List.ofSeq
-                        |> getLights
+
+            let lights = lightsForRoom room
 
             printLights lights
 
             let desiredMeetingTime = chooseNextTime lights
             let boardId = RoommateConfig.boardsForCalendar config room.calendarId |> List.head
             desiredMeetingTime
-                |> Option.iter (fun (range,pos) ->
-                    printf "\trequesting %d:%d - %d:%d ..\t" range.start.Hour range.start.Minute range.finish.Hour range.finish.Minute
+                |> logDesiredMeetingTime
+                |> Option.iter (fun (range,_) ->
                     let startTime = TimeUtil.unixTimeFromDate range.start
                     let finishTime = TimeUtil.unixTimeFromDate range.finish
                     let message = sprintf "{\"boardId\":\"%s\",\"start\":%d,\"finish\":%d}" boardId startTime finishTime
