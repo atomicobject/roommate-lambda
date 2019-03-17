@@ -3,14 +3,11 @@
 open System
 open Roommate
 open Argu
-open Google.Apis.Http
-open System.Globalization
 open SecretReader
 open GoogleCalendarClient
 open Roommate.RoommateConfig
 open FakeBoard
-open Roommate
-open Roommate
+open Roommate.GoogleEventMapper
 
  (*
      todo
@@ -226,7 +223,7 @@ let main argv =
             |> fun (name,LongCalId calId) -> printfn "%s\n%s" name calId
             ()
 
-        let lightsForRoom room =
+        let lightsForRoom (room:MeetingRoom) =
             room
             |> fun room -> printf "%s\t" room.name; room.calendarId
             |> GoogleCalendarClient.fetchEvents calendarService
@@ -254,6 +251,7 @@ let main argv =
 
         if results.Contains Reserve_Room then
             let room = results.GetResult Reserve_Room |> RoommateConfig.looukpCalByName config
+            let roommateAccountEmail = readSecretFromEnv "serviceAccountEmail"
             let lights = lightsForRoom room
             let desiredMeetingTime = chooseNextTime lights
                                         |> logDesiredMeetingTime
@@ -268,7 +266,7 @@ let main argv =
 
 //            printfn "%s" (Newtonsoft.Json.JsonConvert.SerializeObject(events))
 
-            let operation = ReservationMaker.planOperation {ConferenceRoomAccountEvents=events;RequestedTimeRange=desiredMeetingTime}
+            let operation = ReservationMaker.planOperation {ConferenceRoomAccountEvents=events;RequestedTimeRange=desiredMeetingTime} roommateAccountEmail
             printfn "selected operation %s" (operation.ToString())
             ()
 

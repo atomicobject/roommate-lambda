@@ -30,18 +30,35 @@ module ReservationMaker =
         ConferenceRoomAccountEvents : RoommateEvent list
         RequestedTimeRange : TimeRange
     }
+    type EventExtension = {
+        eventId : string
+        newRange : TimeRange
+    }
     type ProcessResult =
         | CreateNewEvent of TimeRange
         | DoNothing of string
+        | ExtendEvent of EventExtension
 
 
-    let planOperation (input: InputInformation): ProcessResult =
+    let planOperation (input: InputInformation) (roommateAccountEmail:string): ProcessResult =
         let intersectsRequestedRange = timeRangeIntersects input.RequestedTimeRange
         let overlap = input.ConferenceRoomAccountEvents |> Seq.map (fun e -> e.timeRange) |> Seq.tryFind intersectsRequestedRange
-        match overlap with
-        | None -> CreateNewEvent input.RequestedTimeRange
-        | Some _ -> DoNothing "Room is booked during that time."
+        let isCloseTo (a:System.DateTime) (b:System.DateTime) =
+            (a-b).Duration() < System.TimeSpan.FromMinutes 2.0
+        let isCloseToRequestedStart = isCloseTo input.RequestedTimeRange.start
+        let adjacentRoommateEvents = input.ConferenceRoomAccountEvents
+                                    |> Seq.where (fun e -> e.creatorEmail = roommateAccountEmail)
+                                    |> Seq.where (fun e -> isCloseToRequestedStart e.timeRange.finish)
 
+        match overlap, (adjacentRoommateEvents |> Seq.length) with
+        | (Some _),_ -> DoNothing "Room is booked during that time."
+        | None,0 -> CreateNewEvent input.RequestedTimeRange
+        | None,1 ->
+            let eventToExtend = adjacentRoommateEvents |> Seq.head
+            ExtendEvent {eventId = eventToExtend.gCalId;newRange={start=eventToExtend.timeRange.start;finish=input.RequestedTimeRange.finish}}
+        | None,x ->
+            printfn "Found %d candidate events to extend. Giving up and creating a new one." x
+            CreateNewEvent input.RequestedTimeRange
 
 
     ()
