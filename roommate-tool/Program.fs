@@ -8,6 +8,7 @@ open GoogleCalendarClient
 open Roommate.RoommateConfig
 open FakeBoard
 open Roommate.GoogleEventMapper
+open Roommate.ReservationMaker
 
  (*
      todo
@@ -266,8 +267,13 @@ let main argv =
 
 //            printfn "%s" (Newtonsoft.Json.JsonConvert.SerializeObject(events))
 
-            let operation = ReservationMaker.planOperation {ConferenceRoomAccountEvents=events;RequestedTimeRange=desiredMeetingTime} roommateAccountEmail
+            let input: InputInformation = {
+                            ConferenceRoomAccountEvents = events
+                            RequestedTimeRange = desiredMeetingTime
+                        }
+            let operation = input |> ReservationMaker.sanityCheck |> Result.map (ReservationMaker.planOperation roommateAccountEmail)
             printfn "selected operation: %s" (operation.ToString())
+
             ()
 
         if results.Contains Push_Button then

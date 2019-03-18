@@ -52,7 +52,7 @@ module ReservationMaker =
         let intersectsRequestedRange = timeRangeIntersects input.RequestedTimeRange
         input.ConferenceRoomAccountEvents |> Seq.map (fun e -> e.timeRange) |> Seq.tryFind intersectsRequestedRange
 
-    let planOperation (input: InputInformation) (roommateAccountEmail:string): ProcessResult =
+    let planOperation (roommateAccountEmail:string) (input: InputInformation): ProcessResult =
         let conflictingEvent = getFirstConflictingEvent input
         let adjacentRoommateEvents = getAdjacentRoommateEvents input roommateAccountEmail
 
@@ -65,6 +65,15 @@ module ReservationMaker =
             printfn "Found %d candidate events to extend. Giving up and creating a new one." x.Length
             CreateNewEvent input.RequestedTimeRange
 
+    let sanityCheck (input: InputInformation) =
+        let desiredTimeRange = input.RequestedTimeRange
+        if desiredTimeRange.start > desiredTimeRange.finish then
+            (Error "invalid event")
+        else if desiredTimeRange.finish < System.DateTime.Now then
+            (Error "cannot create historic event")
+        else if desiredTimeRange.start > (System.DateTime.Now.AddHours 3.0) then
+            (Error "cannot create event >3 hours in the future")
+        else
+            Ok input
 
-    ()
 
