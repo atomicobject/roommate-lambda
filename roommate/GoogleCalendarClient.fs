@@ -225,17 +225,60 @@ module GoogleCalendarClient =
 
     type EventExtension = {
         eventId : string
+        oldRange : TimeRange
         newRange : TimeRange
     }
 
-    let extendEvent (calendarService:CalendarService) (calId:string) (eventExtension:EventExtension) =
+    type EditResult =
+        | Accepted of Event
+        | Rejected
+
+    type ReceivedEditResult =
+        | AcceptedEdit
+        | RejectedEdit
+        | EditError of string
+
+    let pollForReceivedEdit (calendarService:CalendarService) (ext:EventExtension) attendeeCalendarId =
+        let pollFn () =
+            let getRequest = calendarService.Events.Get(attendeeCalendarId,ext.eventId)
+            let result = getRequest.Execute()
+            let newStatus = singleAttendeesStatus result
+            let newTimeRange = {start=result.Start.DateTime.Value;finish=result.End.DateTime.Value}
+            printfn "%s,%s" newStatus (newTimeRange.ToString())
+            match newStatus,newTimeRange with
+            | "needsAction",_ -> None
+            | _,r when r = ext.oldRange -> None
+            | "declined",r when r = ext.newRange -> Some Rejected
+            | "accepted",r when r = ext.newRange -> Some (Accepted result)
+            | a,b -> failwith (sprintf "unanticipated polling status %s, %s" a (b.ToString()))
+
+        let pollResult = pollNTimesOrUntil 20 pollFn
+
+        match pollResult with
+        | Success (Accepted result,_) -> AcceptedEdit
+        | Success (Rejected,_) -> RejectedEdit
+        | Timeout count -> EditError (sprintf "Timed out after %d tries" count)
+
+    let editEventEndTime (calendarService:CalendarService) calId eventId endTime =
         let updatedEvent : Event = new Event();
         updatedEvent.End <- new EventDateTime()
-        updatedEvent.End.DateTime <- System.Nullable(eventExtension.newRange.finish)
-        let req = calendarService.Events.Patch(updatedEvent,calId,eventExtension.eventId)
-        let result = req.Execute()
+        updatedEvent.End.DateTime <- System.Nullable(endTime)
+        let req = calendarService.Events.Patch(updatedEvent,calId,eventId)
+        req.Execute()
 
-        result
+    let extendEvent (calendarService:CalendarService) (calId:string) (eventExtension:EventExtension) (LongCalId attendeeCalId) =
+        let editResult = editEventEndTime calendarService calId eventExtension.eventId eventExtension.newRange.finish
+        let receivedEditResult = pollForReceivedEdit calendarService eventExtension attendeeCalId
+        match receivedEditResult with
+        | AcceptedEdit -> Ok editResult
+        | EditError e -> Result.Error e
+        | RejectedEdit ->
+            printfn "Edit was declined by room. Reverting.."
+            let revertResult = editEventEndTime calendarService calId eventExtension.eventId eventExtension.oldRange.finish
+            printfn "revert result: %s" (revertResult.ToString())
+
+            Result.Error "Edit was declined by room."
+
 
     let fetchEvents (calendarService:CalendarService) (LongCalId calendarId) =
         async {

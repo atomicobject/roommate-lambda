@@ -22,7 +22,7 @@ module RoommateLogic =
         calId |> (fun calId ->
             match RoommateConfig.tryLookupCalById config.roommateConfig calId with
             | Some room -> Ok room
-            | None -> s |> sprintf "Calendar %s is not in my list!" |> Error )
+            | None -> s |> sprintf "Calendar %s is not in my list!" |> Result.Error )
         |> Result.map (fun room ->
                 sprintf "Calendar ID %s" room.name |> logFn
                 let calendarService = serviceAccountSignIn config.serviceAccountEmail config.serviceAccountPrivKey config.serviceAccountAppName |> Async.RunSynchronously
@@ -86,7 +86,7 @@ module RoommateLogic =
         calId |> (fun calId ->
             match RoommateConfig.tryLookupCalById config.roommateConfig calId with
             | Some room -> Ok room
-            | None -> calIdString |> sprintf "Calendar %s is not in my list!" |> Error )
+            | None -> calIdString |> sprintf "Calendar %s is not in my list!" |> Result.Error )
         |> Result.map (fun room ->
                 sprintf "Calendar ID %s" room.name |> logFn
                 let calendarService = serviceAccountSignIn config.serviceAccountEmail config.serviceAccountPrivKey config.serviceAccountAppName |> Async.RunSynchronously

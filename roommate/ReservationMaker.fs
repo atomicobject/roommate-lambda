@@ -33,6 +33,7 @@ module ReservationMaker =
     type EventExtension = {
         eventId : string
         newRange : TimeRange
+        oldRange : TimeRange
     }
     type ProcessResult =
         | CreateNewEvent of TimeRange
@@ -60,7 +61,12 @@ module ReservationMaker =
         | (Some _),_ -> Error "Room is booked during that time."
         | None,[] -> Ok (CreateNewEvent input.RequestedTimeRange)
         | None,[eventToExtend] ->
-            Ok (ExtendEvent {eventId = eventToExtend.gCalId;newRange={start=eventToExtend.timeRange.start;finish=input.RequestedTimeRange.finish}})
+            Ok (ExtendEvent
+                    {
+                        eventId = eventToExtend.gCalId
+                        oldRange=eventToExtend.timeRange
+                        newRange={start=eventToExtend.timeRange.start;finish=input.RequestedTimeRange.finish}
+                    })
         | None,x ->
             printfn "Found %d candidate events to extend. Giving up and creating a new one." x.Length
             Ok (CreateNewEvent input.RequestedTimeRange)

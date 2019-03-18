@@ -1,4 +1,5 @@
 namespace Roommate.Tests
+open FsUnitTyped
 
 module ReservationMakerTest =
 
@@ -33,7 +34,7 @@ module ReservationMakerTest =
             }
 
             let result = planOperation "foo@bar.com" input
-            result |> should equal (CreateNewEvent input.RequestedTimeRange)
+            result |> shouldEqual (Ok (CreateNewEvent input.RequestedTimeRange))
 
         [<Fact>]
         let ``rejects when event already exists``() =
@@ -43,7 +44,7 @@ module ReservationMakerTest =
             }
 
             let result = planOperation anEvent.creatorEmail input
-            result |> should equal (Error "Room is booked during that time.")
+            result |> shouldEqual (Error "Room is booked during that time.")
 
         [<Fact>]
         let ``rejects when the room is busy``() =
@@ -58,7 +59,7 @@ module ReservationMakerTest =
             }
 
             let result = planOperation anEvent.creatorEmail input
-            result |> should equal (Error "Room is booked during that time.")
+            result |> shouldEqual (Error "Room is booked during that time.")
 
         [<Fact>]
         let ``extends when the requested range immediately follows a roommate event and the room is free``() =
@@ -76,7 +77,11 @@ module ReservationMakerTest =
             }
 
             let result = planOperation anEvent.creatorEmail input
-            result |> should equal (ExtendEvent {eventId = anEvent.gCalId; newRange = {start=time1.start;finish=time2.finish}})
+            result |> shouldEqual (Ok (ExtendEvent {
+                eventId = anEvent.gCalId
+                oldRange = {start=time1.start;finish=time1.finish}
+                newRange = {start=time1.start;finish=time2.finish}
+            }))
 
 
     module sanityCheck =
@@ -88,10 +93,6 @@ module ReservationMakerTest =
                 finish = System.DateTime.Now.AddMinutes(20.0)
             }
         }
-
-        // https://stackoverflow.com/a/23991168/202907
-        let shouldEqual (x: 'a) (y: 'a) =
-            Assert.AreEqual(x, y, sprintf "Expected: %A\nActual: %A" x y)
 
         [<Fact>]
         let ``should accept valid input``() =

@@ -271,7 +271,9 @@ let main argv =
             let operation = ReservationMaker.processRequest events desiredMeetingTime roommateAccountEmail
             printfn "selected operation: %s" (operation.ToString())
             match operation with
-            | Error e -> printfn "Error: %s" e
+            | Result.Error e ->
+                printfn "Error: %s" e
+                ()
             | Ok (ReservationMaker.CreateNewEvent timeRange) ->
                 // todo: pass timeRange as one parameter
                 let createResult = GoogleCalendarClient.createEvent calendarService config.myCalendar room.calendarId timeRange.start timeRange.finish |> Async.RunSynchronously
@@ -281,8 +283,9 @@ let main argv =
                 let googleExtension : GoogleCalendarClient.EventExtension = {
                     eventId = reservationmakerExtension.eventId
                     newRange = reservationmakerExtension.newRange
+                    oldRange = reservationmakerExtension.oldRange
                 }
-                let extendResult = GoogleCalendarClient.extendEvent calendarService config.myCalendar googleExtension
+                let extendResult = GoogleCalendarClient.extendEvent calendarService config.myCalendar googleExtension room.calendarId
                 printfn "extendResult %s" (extendResult.ToString())
                 ()
 
