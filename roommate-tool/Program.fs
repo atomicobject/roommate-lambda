@@ -7,8 +7,9 @@ open SecretReader
 open GoogleCalendarClient
 open Roommate.RoommateConfig
 open FakeBoard
-open Roommate.GoogleEventMapper
-open Roommate.ReservationMaker
+//open Roommate.GoogleEventMapper
+//open Roommate.ReservationMaker
+//open Roommate.ReservationMaker
 
  (*
      todo
@@ -267,12 +268,24 @@ let main argv =
 
 //            printfn "%s" (Newtonsoft.Json.JsonConvert.SerializeObject(events))
 
-            let input: InputInformation = {
-                            ConferenceRoomAccountEvents = events
-                            RequestedTimeRange = desiredMeetingTime
-                        }
-            let operation = input |> ReservationMaker.sanityCheck |> Result.map (ReservationMaker.planOperation roommateAccountEmail)
+            let operation = ReservationMaker.processRequest events desiredMeetingTime roommateAccountEmail
             printfn "selected operation: %s" (operation.ToString())
+            match operation with
+            | Error e -> printfn "Error: %s" e
+            | Ok (ReservationMaker.CreateNewEvent timeRange) ->
+                // todo: pass timeRange as one parameter
+                let createResult = GoogleCalendarClient.createEvent calendarService config.myCalendar room.calendarId timeRange.start timeRange.finish |> Async.RunSynchronously
+                printfn "createResult %s" (createResult.ToString())
+                ()
+            | Ok (ReservationMaker.ExtendEvent reservationmakerExtension) ->
+                let googleExtension : GoogleCalendarClient.EventExtension = {
+                    eventId = reservationmakerExtension.eventId
+                    newRange = reservationmakerExtension.newRange
+                }
+                let extendResult = GoogleCalendarClient.extendEvent calendarService config.myCalendar googleExtension
+                printfn "extendResult %s" (extendResult.ToString())
+                ()
+
 
             ()
 

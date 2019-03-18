@@ -36,7 +36,7 @@ module ReservationMaker =
     }
     type ProcessResult =
         | CreateNewEvent of TimeRange
-        | DoNothing of string
+//        | DoNothing of string
         | ExtendEvent of EventExtension
 
 
@@ -52,18 +52,18 @@ module ReservationMaker =
         let intersectsRequestedRange = timeRangeIntersects input.RequestedTimeRange
         input.ConferenceRoomAccountEvents |> Seq.map (fun e -> e.timeRange) |> Seq.tryFind intersectsRequestedRange
 
-    let planOperation (roommateAccountEmail:string) (input: InputInformation): ProcessResult =
+    let planOperation (roommateAccountEmail:string) (input: InputInformation): Result<ProcessResult,string> =
         let conflictingEvent = getFirstConflictingEvent input
         let adjacentRoommateEvents = getAdjacentRoommateEvents input roommateAccountEmail
 
         match conflictingEvent, adjacentRoommateEvents with
-        | (Some _),_ -> DoNothing "Room is booked during that time."
-        | None,[] -> CreateNewEvent input.RequestedTimeRange
+        | (Some _),_ -> Error "Room is booked during that time."
+        | None,[] -> Ok (CreateNewEvent input.RequestedTimeRange)
         | None,[eventToExtend] ->
-            ExtendEvent {eventId = eventToExtend.gCalId;newRange={start=eventToExtend.timeRange.start;finish=input.RequestedTimeRange.finish}}
+            Ok (ExtendEvent {eventId = eventToExtend.gCalId;newRange={start=eventToExtend.timeRange.start;finish=input.RequestedTimeRange.finish}})
         | None,x ->
             printfn "Found %d candidate events to extend. Giving up and creating a new one." x.Length
-            CreateNewEvent input.RequestedTimeRange
+            Ok (CreateNewEvent input.RequestedTimeRange)
 
     let sanityCheck (input: InputInformation) =
         let desiredTimeRange = input.RequestedTimeRange
@@ -75,5 +75,12 @@ module ReservationMaker =
             (Error "cannot create event >3 hours in the future")
         else
             Ok input
+
+    let processRequest events desiredMeetingTime roommateAccountEmail =
+            let input: InputInformation = {
+                            ConferenceRoomAccountEvents = events
+                            RequestedTimeRange = desiredMeetingTime
+                        }
+            input |> sanityCheck |> Result.bind (planOperation roommateAccountEmail)
 
 

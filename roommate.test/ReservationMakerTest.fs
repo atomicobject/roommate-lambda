@@ -43,7 +43,7 @@ module ReservationMakerTest =
             }
 
             let result = planOperation anEvent.creatorEmail input
-            result |> should equal (DoNothing "Room is booked during that time.")
+            result |> should equal (Error "Room is booked during that time.")
 
         [<Fact>]
         let ``rejects when the room is busy``() =
@@ -58,7 +58,7 @@ module ReservationMakerTest =
             }
 
             let result = planOperation anEvent.creatorEmail input
-            result |> should equal (DoNothing "Room is booked during that time.")
+            result |> should equal (Error "Room is booked during that time.")
 
         [<Fact>]
         let ``extends when the requested range immediately follows a roommate event and the room is free``() =

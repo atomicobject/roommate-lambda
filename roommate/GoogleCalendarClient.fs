@@ -1,4 +1,5 @@
 namespace Roommate
+open TimeUtil
 
 module GoogleCalendarClient =
 
@@ -122,8 +123,6 @@ module GoogleCalendarClient =
             printfn "initial attendee response status %s" (creationResult.Attendees.Item(0).ResponseStatus)
             let latestResult = pollForAttendee calendarService creationResult.Id calendarId
 
-
-            let finalResult = latestResult
             let finalResult = latestResult
                                 |> Result.map singleAttendeesStatus
                                 |> function
@@ -223,6 +222,20 @@ module GoogleCalendarClient =
             let! editResult = editEvent calendarService roommateCalId roommateEvent
             return Ok editResult
         }
+
+    type EventExtension = {
+        eventId : string
+        newRange : TimeRange
+    }
+
+    let extendEvent (calendarService:CalendarService) (calId:string) (eventExtension:EventExtension) =
+        let updatedEvent : Event = new Event();
+        updatedEvent.End <- new EventDateTime()
+        updatedEvent.End.DateTime <- System.Nullable(eventExtension.newRange.finish)
+        let req = calendarService.Events.Patch(updatedEvent,calId,eventExtension.eventId)
+        let result = req.Execute()
+
+        result
 
     let fetchEvents (calendarService:CalendarService) (LongCalId calendarId) =
         async {
