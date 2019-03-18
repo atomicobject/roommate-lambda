@@ -1,7 +1,7 @@
 namespace Roommate.Tests
+open FsUnitTyped
 
 module GoogleEventMapperTest =
-    // todo: move to separate file
     let eventJson = """
 {
     "anyoneCanAddSelf": null,
@@ -110,7 +110,7 @@ module GoogleEventMapperTest =
                 responseStatus = "accepted"
             }]
         }
-        result |> should equal expected
+        result |> shouldEqual expected
 
 
     // todo: all-day events (null start/endtime?)
