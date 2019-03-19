@@ -82,7 +82,7 @@ module ReservationMaker =
         else
             Ok input
 
-    let processRequest events desiredMeetingTime roommateAccountEmail =
+    let processRequest desiredMeetingTime roommateAccountEmail events =
             let input: InputInformation = {
                             ConferenceRoomAccountEvents = events
                             RequestedTimeRange = desiredMeetingTime
@@ -90,3 +90,16 @@ module ReservationMaker =
             input |> sanityCheck |> Result.bind (planOperation roommateAccountEmail)
 
 
+
+    let executeOperation calendarService myCalendar roomCalendarId op =
+        match op with
+            | CreateNewEvent timeRange ->
+                // todo: pass timeRange as one parameter
+                GoogleCalendarClient.createEvent calendarService myCalendar roomCalendarId timeRange.start timeRange.finish |> Async.RunSynchronously
+            | ExtendEvent reservationmakerExtension ->
+                let googleExtension : GoogleCalendarClient.EventExtension = {
+                    eventId = reservationmakerExtension.eventId
+                    newRange = reservationmakerExtension.newRange
+                    oldRange = reservationmakerExtension.oldRange
+                }
+                GoogleCalendarClient.extendEvent calendarService myCalendar googleExtension roomCalendarId

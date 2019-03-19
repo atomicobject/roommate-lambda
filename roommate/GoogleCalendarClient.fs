@@ -158,25 +158,6 @@ module GoogleCalendarClient =
 
     let editEvent (calendarService:CalendarService) calId event =
         async {
-            (*
-            plan:
-             - store original event start/end times
-             - pull target calendar ID from attendee
-             - query events from it within the time range of our event + 15 minutes
-             - if the only event is ours, capture its ID and proceed. else quit.
-             - edit roommate's event
-             - poll and check:
-               - attendee's status (to watch for "declined")
-               - attendee's event (to watch for it to grow)
-             - then, if:
-               - attendee's event grows to match roomate's event -> success
-               - status goes to declined ->
-                 - edit roommate event back to its original end time
-                 - log failure
-               - timeout ->
-                 - edit roommate event back to its original end time
-                 - log failure
-            *)
 
             let req = calendarService.Events.Update(event,calId,event.Id)
             let result = req.Execute()
@@ -244,7 +225,7 @@ module GoogleCalendarClient =
             let result = getRequest.Execute()
             let newStatus = singleAttendeesStatus result
             let newTimeRange = {start=result.Start.DateTime.Value;finish=result.End.DateTime.Value}
-            printfn "%s,%s" newStatus (newTimeRange.ToString())
+//            printfn "%s,%s" newStatus (newTimeRange.ToString())
             match newStatus,newTimeRange with
             | "needsAction",_ -> None
             | _,r when r = ext.oldRange -> None
@@ -252,6 +233,7 @@ module GoogleCalendarClient =
             | "accepted",r when r = ext.newRange -> Some (Accepted result)
             | a,b -> failwith (sprintf "unanticipated polling status %s, %s" a (b.ToString()))
 
+        printfn "waiting for edit to be accepted by conference room calendar.."
         let pollResult = pollNTimesOrUntil 20 pollFn
 
         match pollResult with
@@ -292,6 +274,19 @@ module GoogleCalendarClient =
 
             return! request.ExecuteAsync() |> Async.AwaitTask
         }
+
+    let fetchEvents2 (calendarService:CalendarService) (LongCalId calendarId) =
+        let request = calendarService.Events.List(calendarId)
+        request.TimeMin <-System.Nullable DateTime.Now
+        request.TimeMax <- System.Nullable (DateTime.Now.AddDays(1.0))
+        request.ShowDeleted <- System.Nullable false
+        request.SingleEvents <- System.Nullable true
+//            request.MaxResults <- System.Nullable 10
+        request.OrderBy <- System.Nullable EventsResource.ListRequest.OrderByEnum.StartTime
+
+        request.Execute()
+            |> (fun g -> g.Items)
+            |> List.ofSeq
 
     let isRoommateEvent (event:Event) =
         event.Creator.Email.StartsWith("roommate") && event.Creator.Email.EndsWith(".gserviceaccount.com")

@@ -7,9 +7,6 @@ open SecretReader
 open GoogleCalendarClient
 open Roommate.RoommateConfig
 open FakeBoard
-//open Roommate.GoogleEventMapper
-//open Roommate.ReservationMaker
-//open Roommate.ReservationMaker
 
  (*
      todo
@@ -261,34 +258,21 @@ let main argv =
                                         | None -> failwith "exiting."
                                         | Some (range,_) -> range
 
-            let events = GoogleCalendarClient.fetchEvents calendarService room.calendarId
-                            |> Async.RunSynchronously |> (fun g -> g.Items)
-                            |> List.ofSeq
+            let logMappedEvents (events:GoogleEventMapper.RoommateEvent list) =
+                printfn "fetched %d events." events.Length
+                events
+            let logSelectedOperation (op:ReservationMaker.ProcessResult) =
+                printfn "selected operation %s" (op.ToString())
+                Ok op
+            GoogleCalendarClient.fetchEvents2 calendarService room.calendarId
                             |> List.map GoogleEventMapper.mapEvent
-
-//            printfn "%s" (Newtonsoft.Json.JsonConvert.SerializeObject(events))
-
-            let operation = ReservationMaker.processRequest events desiredMeetingTime roommateAccountEmail
-            printfn "selected operation: %s" (operation.ToString())
-            match operation with
-            | Result.Error e ->
-                printfn "Error: %s" e
-                ()
-            | Ok (ReservationMaker.CreateNewEvent timeRange) ->
-                // todo: pass timeRange as one parameter
-                let createResult = GoogleCalendarClient.createEvent calendarService config.myCalendar room.calendarId timeRange.start timeRange.finish |> Async.RunSynchronously
-                printfn "createResult %s" (createResult.ToString())
-                ()
-            | Ok (ReservationMaker.ExtendEvent reservationmakerExtension) ->
-                let googleExtension : GoogleCalendarClient.EventExtension = {
-                    eventId = reservationmakerExtension.eventId
-                    newRange = reservationmakerExtension.newRange
-                    oldRange = reservationmakerExtension.oldRange
-                }
-                let extendResult = GoogleCalendarClient.extendEvent calendarService config.myCalendar googleExtension room.calendarId
-                printfn "extendResult %s" (extendResult.ToString())
-                ()
-
+                            |> logMappedEvents
+                            |> ReservationMaker.processRequest desiredMeetingTime roommateAccountEmail
+                            |> Result.bind logSelectedOperation
+                            |> Result.bind (ReservationMaker.executeOperation calendarService config.myCalendar room.calendarId)
+                |> function
+                | Error e -> printfn "Error %s" e
+                | Ok event -> printfn "created event %s" <| summarizeEvent event
 
             ()
 
