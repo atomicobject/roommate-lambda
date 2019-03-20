@@ -100,8 +100,13 @@ type Functions() =
                         |> function
                             | None -> Error  "Unknown board"
                             | Some calId -> Ok calId
-                        |> Result.bind (createCalendarEvent logFn config startTime endTime)
-                        |> Result.bind (fun _ -> FunctionImpls.sendAnUpdateToBoard request.boardId logFn)
+                        |> Result.bind (fun calId ->
+                            let events = createCalendarEvent logFn config startTime endTime calId
+                            events |> Result.bind (fun e -> (calId,e)|>Ok)
+                            )
+                        |> Result.bind (fun (calId,events) ->
+                            FunctionImpls.mapEventsAndSendMessage calId config logFn events |> ignore
+                            Ok events)
                         |> function
                             | Error e -> logFn e
                             | _ -> ()

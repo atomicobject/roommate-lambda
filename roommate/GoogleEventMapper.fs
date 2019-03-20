@@ -31,3 +31,7 @@ module GoogleEventMapper =
                 responseStatus = a.ResponseStatus
             })
         }
+
+    let isRoommateEvent (event:RoommateEvent) =
+        event.creatorEmail.StartsWith("roommate") && event.creatorEmail.EndsWith(".gserviceaccount.com")
+

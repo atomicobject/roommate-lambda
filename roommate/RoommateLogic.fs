@@ -80,49 +80,16 @@ module RoommateLogic =
         else
             CreateEvent desiredTimeRange
 
-    let createCalendarEvent logFn (config:LambdaConfiguration) (startTime:DateTime) (endTime:DateTime) (calId:LongCalId) =
-        let desiredTimeRange = {start=startTime;finish=endTime}
-        let (LongCalId calIdString) = calId
-        calId |> (fun calId ->
-            match RoommateConfig.tryLookupCalById config.roommateConfig calId with
-            | Some room -> Ok room
-            | None -> calIdString |> sprintf "Calendar %s is not in my list!" |> Result.Error )
-        |> Result.map (fun room ->
-                sprintf "Calendar ID %s" room.name |> logFn
-                let calendarService = serviceAccountSignIn config.serviceAccountEmail config.serviceAccountPrivKey config.serviceAccountAppName |> Async.RunSynchronously
-
-                let googleEvents = (fetchEvents calendarService room.calendarId |> Async.RunSynchronously)
-
-                googleEvents |> logEvents (printfn "%s")
-
-                let events = googleEvents.Items |> List.ofSeq |> List.map transformEvent
-                printfn "requested time range %s %s" (startTime.ToString("o")) (endTime.ToString("o"))
-
-                let action = determineWhatToDo events desiredTimeRange
-                let result = match action with
-                                | CreateEvent r -> createEvent calendarService config.roommateConfig.myCalendar room.calendarId r.start r.finish |> Async.RunSynchronously
-                                | UpdateEvent (eventId,start,finish) -> editAssociatedEventLength calendarService config.roommateConfig.myCalendar calIdString eventId start finish |> Async.RunSynchronously
-                                | Nothing s -> failwith ("createCalendarEvent rejection: "+s)
-
-                sprintf "result event: %s" (serializeIndented result) |> logFn
-                )
-
     let iso8601datez (dt:DateTime) =
         // https://stackoverflow.com/a/115034
         dt.ToString("s", System.Globalization.CultureInfo.InvariantCulture) + "Z"
 
-    let maybeDateTimeString (ndt:Google.Apis.Calendar.v3.Data.EventDateTime) =
-        ndt.DateTime |> Option.ofNullable
-                     |> function
-                        | Some dt -> iso8601datez dt
-                        | None -> "(n/a)"
-
-    let mapEventsToMessage (events:Google.Apis.Calendar.v3.Data.Events) =
+    let mapEventsToMessage (events:GoogleEventMapper.RoommateEvent list) = //Google.Apis.Calendar.v3.Data.Events) =
         // todo: unit test
         let msg : Messages.CalendarUpdate = {
             time = iso8601datez DateTime.UtcNow
-            events = events.Items
-                         |> Seq.map(fun e -> ({s=maybeDateTimeString e.Start;e=maybeDateTimeString e.End;r=isRoommateEvent e}:Messages.CalendarEvent))
+            events = events
+                         |> Seq.map(fun e -> ({s=iso8601datez e.timeRange.start;e=iso8601datez e.timeRange.finish;r=GoogleEventMapper.isRoommateEvent e}:Messages.CalendarEvent))
                          |> List.ofSeq
         }
         msg
@@ -157,5 +124,63 @@ module RoommateLogic =
         reversed.TryFind boardId
             |> Option.map lengthen
 
+    let doEverything desiredMeetingTime roommateAccountEmail calendarService myCalendar (room:MeetingRoom) mappedEvents =
+        let logMappedEvents (events:GoogleEventMapper.RoommateEvent list) =
+            printfn "fetched %d events." events.Length
+            events
 
+        let logSelectedOperation (op:ReservationMaker.ProcessResult) =
+//                printfn "selected operation %s" op.
+            match op with
+            | ReservationMaker.CreateNewEvent range ->
+                printfn "Creating new event %s" (printRange range)
+            | ReservationMaker.ExtendEvent ext ->
+                printfn "Extending existing event %s => %s" (printRange ext.oldRange) (printRange ext.newRange)
+            Ok op
+
+        let spliceInEvent (mappedEvents:GoogleEventMapper.RoommateEvent list) (mappedNewEvent:GoogleEventMapper.RoommateEvent) =
+                let otherEvents = mappedEvents |> List.where (fun e -> e.gCalId <> mappedNewEvent.gCalId)
+                mappedNewEvent::otherEvents |> List.sortBy(fun e -> e.timeRange.start)
+
+        mappedEvents
+            |> logMappedEvents
+            |> ReservationMaker.processRequest desiredMeetingTime roommateAccountEmail
+            |> Result.bind logSelectedOperation
+            |> Result.bind (ReservationMaker.executeOperation calendarService myCalendar room.calendarId)
+            |> Result.bind (fun newEvent ->
+                printfn "created event %s" <| summarizeEvent newEvent
+                Ok newEvent
+                )
+            |> Result.bind (GoogleEventMapper.mapEvent >> Ok)
+            |> Result.bind (fun mappedNewEvent ->
+                let updatedSet = spliceInEvent mappedEvents mappedNewEvent
+                Ok updatedSet)
+
+    let createCalendarEvent logFn (config:LambdaConfiguration) (startTime:DateTime) (endTime:DateTime) (calId:LongCalId) =
+        let desiredMeetingTime = {start=startTime;finish=endTime}
+        let (LongCalId calIdString) = calId
+        let roommateAccountEmail = config.serviceAccountEmail
+        calId |> (fun calId ->
+            match RoommateConfig.tryLookupCalById config.roommateConfig calId with
+            | Some room -> Ok room
+            | None -> calIdString |> sprintf "Calendar %s is not in my list!" |> Result.Error )
+        |> Result.bind (fun room ->
+                sprintf "Calendar ID %s" room.name |> logFn
+                let calendarService = serviceAccountSignIn config.serviceAccountEmail config.serviceAccountPrivKey config.serviceAccountAppName |> Async.RunSynchronously
+
+                let mappedEvents = GoogleCalendarClient.fetchEvents2 calendarService room.calendarId
+                                   |> List.map GoogleEventMapper.mapEvent
+
+
+                mappedEvents
+                    |> doEverything desiredMeetingTime roommateAccountEmail calendarService config.roommateConfig.myCalendar room
+                    |> function
+                    | Ok events ->
+                        printfn "updated event list:"
+                        events |> List.iter (fun e -> printfn "%s %s" (e.timeRange.start.Date.ToString()) (printRange e.timeRange))
+                        Ok events
+                    | Error e ->
+                        printfn "Error %s" e
+                        Error e
+                )
 

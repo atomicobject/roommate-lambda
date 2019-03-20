@@ -30,5 +30,6 @@ module TimeUtil =
     let unixTimeFromDate (d:DateTime) =
         d |> DateTimeOffset |> fun x -> x.ToUnixTimeSeconds()
 
-
+    let printRange (range:TimeRange) =
+        sprintf "%s-%s" (range.start.TimeOfDay.ToString()) (range.finish.TimeOfDay.ToString())
 
