@@ -25,14 +25,15 @@ module FunctionImpls =
         }
 
 
-    let sendAnUpdateToCal logFn (calId:LongCalId) =
+    let mapEventsAndSendMessage calId config logFn events =
+        let msg = events |> mapEventsToMessage
+        let topics = determineTopicsToPublishTo config.roommateConfig calId
+        sendMessageToTopics logFn config.mqttEndpoint topics msg
 
+    let sendAnUpdateToCal logFn (calId:LongCalId) =
         let config = readConfig()
-        calId
-            |> (fetchEventsForCalendar logFn config)
-            |> Result.bind (mapEventsToMessage)
-            |> Result.bind (determineTopicsToPublishTo config.roommateConfig)
-            |> Result.bind (sendMessageToTopics logFn config.mqttEndpoint)
+        let events = calId |> (fetchEventsForCalendar logFn config)
+        events |> Result.bind (mapEventsAndSendMessage calId config logFn)
 
     let sendAnUpdateToBoard (boardId:string) logFn =
 

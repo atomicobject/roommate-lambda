@@ -31,7 +31,7 @@ module RoommateLogic =
 
                 events |> logEvents logFn
 
-                room.calendarId,events
+                events
                 )
 
     type RoommateEvent = {
@@ -117,7 +117,7 @@ module RoommateLogic =
                         | Some dt -> iso8601datez dt
                         | None -> "(n/a)"
 
-    let mapEventsToMessage (calendarId,events:Google.Apis.Calendar.v3.Data.Events) =
+    let mapEventsToMessage (events:Google.Apis.Calendar.v3.Data.Events) =
         // todo: unit test
         let msg : Messages.CalendarUpdate = {
             time = iso8601datez DateTime.UtcNow
@@ -125,16 +125,16 @@ module RoommateLogic =
                          |> Seq.map(fun e -> ({s=maybeDateTimeString e.Start;e=maybeDateTimeString e.End;r=isRoommateEvent e}:Messages.CalendarEvent))
                          |> List.ofSeq
         }
-        Ok (calendarId,msg)
+        msg
 
-    let determineTopicsToPublishTo (config:RoommateConfig) (calendarId:LongCalId,msg) =
+    let determineTopicsToPublishTo (config:RoommateConfig) (calendarId:LongCalId) =
         let boardTopics = RoommateConfig.boardsForCalendar config calendarId
                             |> List.map (fun boardId -> sprintf "calendar-updates/for-board/%s" boardId)
         let calendarTopic = sprintf "calendar-updates/for-calendar/%s" (calendarId |> fun (LongCalId s) -> s)
         let topics = calendarTopic::boardTopics
-        Ok (topics,msg)
+        (topics)
 
-    let sendMessageToTopics (logFn:string->unit) (endpoint:string) (topics:string list, message:Messages.CalendarUpdate) =
+    let sendMessageToTopics (logFn:string->unit) (endpoint:string) (topics:string list) (message:Messages.CalendarUpdate) =
         let json = (message |> Newtonsoft.Json.JsonConvert.SerializeObject)
         logFn "calendarUpdate message:"
         logFn json

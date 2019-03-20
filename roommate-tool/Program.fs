@@ -7,6 +7,7 @@ open SecretReader
 open GoogleCalendarClient
 open Roommate.RoommateConfig
 open FakeBoard
+open Roommate.TimeUtil
 
  (*
      todo
@@ -261,18 +262,42 @@ let main argv =
             let logMappedEvents (events:GoogleEventMapper.RoommateEvent list) =
                 printfn "fetched %d events." events.Length
                 events
+            let printRange (range:TimeRange) =
+                sprintf "%s-%s" (range.start.TimeOfDay.ToString()) (range.finish.TimeOfDay.ToString())
             let logSelectedOperation (op:ReservationMaker.ProcessResult) =
-                printfn "selected operation %s" (op.ToString())
+//                printfn "selected operation %s" op.
+                match op with
+                | ReservationMaker.CreateNewEvent range ->
+                    printfn "Creating new event %s" (printRange range)
+                | ReservationMaker.ExtendEvent ext ->
+                    printfn "Extending existing event %s => %s" (printRange ext.oldRange) (printRange ext.newRange)
                 Ok op
-            GoogleCalendarClient.fetchEvents2 calendarService room.calendarId
-                            |> List.map GoogleEventMapper.mapEvent
-                            |> logMappedEvents
-                            |> ReservationMaker.processRequest desiredMeetingTime roommateAccountEmail
-                            |> Result.bind logSelectedOperation
-                            |> Result.bind (ReservationMaker.executeOperation calendarService config.myCalendar room.calendarId)
+
+            let spliceInEvent (mappedEvents:GoogleEventMapper.RoommateEvent list) (mappedNewEvent:GoogleEventMapper.RoommateEvent) =
+                    let otherEvents = mappedEvents |> List.where (fun e -> e.gCalId <> mappedNewEvent.gCalId)
+                    mappedNewEvent::otherEvents |> List.sortBy(fun e -> e.timeRange.start)
+            let mappedEvents = GoogleCalendarClient.fetchEvents2 calendarService room.calendarId
+                               |> List.map GoogleEventMapper.mapEvent
+
+
+            mappedEvents
+                |> logMappedEvents
+                |> ReservationMaker.processRequest desiredMeetingTime roommateAccountEmail
+                |> Result.bind logSelectedOperation
+                |> Result.bind (ReservationMaker.executeOperation calendarService config.myCalendar room.calendarId)
+                |> Result.bind (fun newEvent ->
+                    printfn "created event %s" <| summarizeEvent newEvent
+                    Ok newEvent
+                    )
+                |> Result.bind (GoogleEventMapper.mapEvent >> Ok)
+                |> Result.bind (fun mappedNewEvent ->
+                    let updatedSet = spliceInEvent mappedEvents mappedNewEvent
+                    Ok updatedSet)
                 |> function
+                | Ok events ->
+                    printfn "updated event list:"
+                    events |> List.iter (fun e -> printfn "%s %s" (e.timeRange.start.Date.ToString()) (printRange e.timeRange))
                 | Error e -> printfn "Error %s" e
-                | Ok event -> printfn "created event %s" <| summarizeEvent event
 
             ()
 
