@@ -4,7 +4,6 @@ namespace Roommate.Tests
 module TimeUtilTest =
     open Xunit
     open FsUnit
-    open System
     open Roommate.TimeUtil
 
     [<Fact>]

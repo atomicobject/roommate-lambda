@@ -5,16 +5,12 @@ module GoogleCalendarClient =
 
     open System.Threading
     open System
-    open System
     open Google.Apis.Auth.OAuth2
-    open Google.Apis.Auth.OAuth2.Flows
     open Google.Apis.Calendar.v3;
     open Google.Apis.Calendar.v3.Data;
-    open Google.Apis.Services;
+    open Google.Apis.Services; // necessary for BaseClientService below
     open Google.Apis.Util.Store;
     open RoommateConfig
-    open System
-    open System.Threading
 
     let scopes = [CalendarService.Scope.CalendarReadonly;CalendarService.Scope.CalendarEvents]
     let humanSignIn clientId clientSecret =
@@ -69,7 +65,7 @@ module GoogleCalendarClient =
         | Success of 'T * int
         | Timeout of int
 
-    let pollNTimesOrUntil (numTimes:int) (fn: (unit -> 'T option)) : PollResult<'T> =
+    let private pollNTimesOrUntil (numTimes:int) (fn: (unit -> 'T option)) : PollResult<'T> =
         // todo: better
         let mutable keepGoing = true
         let mutable count = 0
@@ -90,7 +86,7 @@ module GoogleCalendarClient =
         | None -> Timeout count
         | Some x -> Success (x,count)
 
-    let pollForAttendee (calendarService:CalendarService) eventId calendarId =
+    let private pollForAttendee (calendarService:CalendarService) eventId calendarId =
         let pollFn () =
             let getRequest = calendarService.Events.Get(calendarId,eventId)
             let result = getRequest.Execute()
@@ -144,7 +140,7 @@ module GoogleCalendarClient =
 
         }
 
-    let tryOrRevertEvent (calendarService:CalendarService) calId (event:Event) fn =
+    let private tryOrRevertEvent (calendarService:CalendarService) calId (event:Event) fn =
         let originalEvent = calendarService.Events.Get(calId,event.Id).Execute()
 
         let tryResult = fn ()
@@ -156,7 +152,7 @@ module GoogleCalendarClient =
             printfn "Restored event %s to %s-%s" (restoredEvent.Id) (restoredEvent.Start.ToString()) (restoredEvent.End.ToString())
             Result.Error e
 
-    let editEvent (calendarService:CalendarService) calId event =
+    let private editEvent (calendarService:CalendarService) calId event =
         async {
 
             let req = calendarService.Events.Update(event,calId,event.Id)
@@ -179,15 +175,15 @@ module GoogleCalendarClient =
             return result
         }
 
-    let approxEqual (a:DateTime) (b:DateTime) =
+    let private approxEqual (a:DateTime) (b:DateTime) =
         (a - b).Duration() < TimeSpan.FromMinutes(1.0)
 
-    let containsAttendee (e:Event) roommateCalId =
+    let private containsAttendee (e:Event) roommateCalId =
 //        printfn "event attendees:"
         e.Attendees |> Seq.map (fun a -> a.Email) |> Seq.reduce (sprintf "%s,%s") |> printfn "%s"
         e.Attendees |> Seq.tryFind(fun a -> a.Email = roommateCalId) |> (fun x -> x.IsSome)
 
-    let editAssociatedEventLength (calendarService:CalendarService) roommateCalId roomCalId roommateEventId (start:DateTime) (finish:DateTime) =
+    let private editAssociatedEventLength (calendarService:CalendarService) roommateCalId roomCalId roommateEventId (start:DateTime) (finish:DateTime) =
         printfn "editAssociatedEventLength %s %s %s" roommateCalId roomCalId roommateEventId
         async {
             // first we get the event from the target room's calendar
@@ -219,7 +215,7 @@ module GoogleCalendarClient =
         | RejectedEdit
         | EditError of string
 
-    let pollForReceivedEdit (calendarService:CalendarService) (ext:EventExtension) attendeeCalendarId =
+    let private pollForReceivedEdit (calendarService:CalendarService) (ext:EventExtension) attendeeCalendarId =
         let pollFn () =
             let getRequest = calendarService.Events.Get(attendeeCalendarId,ext.eventId)
             let result = getRequest.Execute()
@@ -241,7 +237,7 @@ module GoogleCalendarClient =
         | Success (Rejected,_) -> RejectedEdit
         | Timeout count -> EditError (sprintf "Timed out after %d tries" count)
 
-    let editEventEndTime (calendarService:CalendarService) calId eventId endTime =
+    let private editEventEndTime (calendarService:CalendarService) calId eventId endTime =
         let updatedEvent : Event = new Event();
         updatedEvent.End <- new EventDateTime()
         updatedEvent.End.DateTime <- System.Nullable(endTime)

@@ -4,7 +4,6 @@ open FsUnitTyped
 module ReservationMakerTest =
 
     open Xunit
-    open FsUnit
     open Roommate
     open ReservationMaker
 

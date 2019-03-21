@@ -7,7 +7,6 @@ open Amazon.Lambda.Core
 open Amazon.Lambda.APIGatewayEvents
 
 open Roommate
-open Roommate
 open Roommate.SecretReader
 open Roommate.RoommateLogic
 

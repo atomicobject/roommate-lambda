@@ -82,7 +82,6 @@ module GoogleEventMapperTest =
 }
 """
     open Xunit
-    open FsUnit
     open Roommate
 
     type GoogleEvent = Google.Apis.Calendar.v3.Data.Event

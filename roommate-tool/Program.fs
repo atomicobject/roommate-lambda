@@ -29,8 +29,6 @@ type CLIArguments =
     | Subscribe_Webhook of calendar:string * endpoint:string
     | Unsubscribe_Webhook of calendar:string * resourceId:string * endpoint:string
     | Subscribe_All_Webhooks of endpoint:string
-    | Create_Event of attendee:string
-    | Update_Event of eventId:string
     | Lookup_CalId of search:string
     | Mqtt_Publish of topic:string * message:string
     | Fake_Board of room:string
@@ -48,8 +46,6 @@ with
             | Subscribe_Webhook _ -> "subscribe to webhook for calendar x and endpoint y"
             | Unsubscribe_Webhook _ -> "unsubscribe to webhook for calendar x and endpoint y"
             | Subscribe_All_Webhooks _ -> "subscribe to webhook for all configured calendars to given endpoint"
-            | Create_Event _ -> "create event on calendar (by name substring)"
-            | Update_Event _ -> "update event (extend it by 15min)"
             | Mqtt_Publish _ -> "publish message to MQTT topic"
             | Fake_Board _ -> "simulate board state for given room"
             | Push_Button _ -> "simulate pushing button on board assigned to given room (sends a reservation request message)"
@@ -182,38 +178,6 @@ let main argv =
                 | e -> printfn " ..error: \n%s\n" (e.ToString())
                 )
             // todo: log all the results
-            ()
-
-        if results.Contains Create_Event then
-            let attendeeNameSubstring = results.GetResult Create_Event
-            // todo: lookup english name of config.myCalendar
-            let roomToInvite = RoommateConfig.looukpCalByName config attendeeNameSubstring
-
-            let start = System.DateTime.Now.AddHours(12.0)
-            let finish = System.DateTime.Now.AddHours(12.0).AddMinutes(15.0)
-            let result = (GoogleCalendarClient.createEvent calendarService config.myCalendar roomToInvite.calendarId start finish |> Async.RunSynchronously)
-
-            match result with
-            | Ok r ->
-                printfn "created: %s" (r.Id)
-                printfn ""
-                printfn "%s" (summarizeEvent r)
-            | Error reason ->
-                printfn "failed to create event."
-                printfn "%s" reason
-
-        if results.Contains Update_Event then
-            let eventId = results.GetResult Update_Event
-
-            let calId = (LongCalId config.myCalendar)
-
-            let roommateEvents = GoogleCalendarClient.fetchEvents calendarService calId |> Async.RunSynchronously
-            let event = roommateEvents.Items |> Seq.find (fun e -> e.Id = eventId)
-            printfn "found event to extend: %s" (event.ToString())
-
-            event.End.DateTime <- System.Nullable (event.End.DateTime.Value.AddMinutes 15.0)
-            let result = (GoogleCalendarClient.editEvent calendarService config.myCalendar event) |> Async.RunSynchronously
-
             ()
 
         if results.Contains Lookup_CalId then

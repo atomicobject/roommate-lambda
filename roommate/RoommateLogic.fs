@@ -55,31 +55,6 @@ module RoommateLogic =
             isRoommateEvent = isRoommateEvent event
         }
 
-    let determineWhatToDo (events:RoommateEvent list) (desiredTimeRange:TimeRange) =
-        let roommateEvents = events |> Seq.where (fun e -> e.isRoommateEvent)
-
-        printfn "found %d roommate events." (roommateEvents |> Seq.length)
-
-        // todo: Seq.where (there may be multiple!)
-        let adjacentEvent = roommateEvents |> Seq.tryFind (fun e ->
-            let distance = (e.range.finish - desiredTimeRange.start).Duration()
-            distance < System.TimeSpan.FromMinutes 2.0
-            )
-
-        if desiredTimeRange.start > desiredTimeRange.finish then
-            (Nothing "invalid event")
-        else if desiredTimeRange.finish < System.DateTime.UtcNow then
-            (Nothing "cannot create historic event")
-        else if desiredTimeRange.start > (System.DateTime.UtcNow.AddHours 3.0) then
-            (Nothing "cannot create event >3 hours in the future")
-        else if adjacentEvent.IsSome then
-            printfn "found event on roommate's calendar adjacent to requested range."
-            (UpdateEvent (adjacentEvent.Value.gcalId,adjacentEvent.Value.range.start,desiredTimeRange.finish))
-        else if (events |> List.tryFind (fun e -> timeRangeIntersects e.range desiredTimeRange)).IsSome then
-            (Nothing "busy")
-        else
-            CreateEvent desiredTimeRange
-
     let iso8601datez (dt:DateTime) =
         // https://stackoverflow.com/a/115034
         dt.ToString("s", System.Globalization.CultureInfo.InvariantCulture) + "Z"
@@ -111,8 +86,6 @@ module RoommateLogic =
             logFn (sprintf "%s.. %s" topic (result.HttpStatusCode.ToString()))
         )
         Ok ""
-
-    let flip (a,b) = (b,a)
 
     let lookupCalendarForBoard (config:RoommateConfig) boardId =
         let reversed = config.boardAssignments

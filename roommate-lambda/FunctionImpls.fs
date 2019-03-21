@@ -1,12 +1,7 @@
 namespace RoommateLambda
 
-open System
-open System.Net
 
-open Amazon.Lambda.Core
-open Amazon.Lambda.APIGatewayEvents
 
-open Roommate
 open Roommate
 open Roommate.SecretReader
 
