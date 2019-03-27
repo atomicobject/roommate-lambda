@@ -3,30 +3,8 @@ open GoogleEventMapper
 open TimeUtil
 
 module ReservationMaker =
-    (*
-        big picture:
-        - receive request for particular board and time range
-        - look up the room for the board
-        - for a wider time range (+/- 12h?)
-//            - fetch all events for roommate account
-            - fetch all events for conference room account
-        - decide what we're trying to do
-            - create a new event
-            - extend an existing event
-            - reject the request
-        - request the change via google calendar API (and wait for it to be accepted)
-        - send updated schedule
-    *)
-
-    (*
-        This file is the "decide what we're trying to do" part.
-
-        // todo: a separate function to sanity check input first (event is valid, near future, etc.)
-    *)
-
 
     type InputInformation = {
-//        RoommateAccountEvents : RoommateEvent list
         ConferenceRoomAccountEvents : RoommateEvent list
         RequestedTimeRange : TimeRange
     }
@@ -37,9 +15,7 @@ module ReservationMaker =
     }
     type ProcessResult =
         | CreateNewEvent of TimeRange
-//        | DoNothing of string
         | ExtendEvent of EventExtension
-
 
     let getAdjacentRoommateEvents input roommateAccountEmail =
         let isCloseTo (a:System.DateTime) (b:System.DateTime) =
@@ -94,8 +70,7 @@ module ReservationMaker =
     let executeOperation calendarService myCalendar roomCalendarId op =
         match op with
             | CreateNewEvent timeRange ->
-                // todo: pass timeRange as one parameter
-                GoogleCalendarClient.createEvent calendarService myCalendar roomCalendarId timeRange.start timeRange.finish |> Async.RunSynchronously
+                GoogleCalendarClient.createEvent calendarService myCalendar roomCalendarId timeRange |> Async.RunSynchronously
             | ExtendEvent reservationmakerExtension ->
                 let googleExtension : GoogleCalendarClient.EventExtension = {
                     eventId = reservationmakerExtension.eventId

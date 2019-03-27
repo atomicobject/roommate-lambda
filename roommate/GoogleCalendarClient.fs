@@ -100,10 +100,10 @@ module GoogleCalendarClient =
         | Success (result,timeout) -> Ok result
         | Timeout count -> Result.Error (sprintf "Timed out after %d tries" count)
 
-    let createEvent (calendarService:CalendarService) calendarId (LongCalId attendee) start finish =
+    let createEvent (calendarService:CalendarService) calendarId (LongCalId attendee) (timeRange:TimeRange) =
         async {
-            let start = new EventDateTime(DateTime = System.Nullable start)
-            let finish = new EventDateTime(DateTime = System.Nullable finish)
+            let start = new EventDateTime(DateTime = System.Nullable timeRange.start)
+            let finish = new EventDateTime(DateTime = System.Nullable timeRange.finish)
 
             let room = new EventAttendee(Email = attendee)
             let event = new Event(
