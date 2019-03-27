@@ -16,8 +16,8 @@
     <Compile Include="FakeBoard.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.IotData" Version="3.3.100" />
-    <PackageReference Include="Google.Apis.Calendar.v3" Version="1.38.0.1508" />
+    <PackageReference Include="AWSSDK.IotData" Version="3.3.100.2" />
+    <PackageReference Include="Google.Apis.Calendar.v3" Version="1.38.0.1529" />
     <PackageReference Include="newtonsoft.json" Version="12.0.1" />
   </ItemGroup>
 </Project>

@@ -96,24 +96,20 @@ module ReservationMakerTest =
         [<Fact>]
         let ``should accept valid input``() =
             let result = sanityCheck exampleInput
-            printfn "result %s" (result.ToString())
             result |> shouldEqual (Ok exampleInput)
 
         [<Fact>]
-        let ``should reject valid input``() =
+        let ``should reject backwards event``() =
             let result = sanityCheck {exampleInput with RequestedTimeRange = {start=System.DateTime.Now;finish=System.DateTime.Now.AddHours(-1.0)}}
-            printfn "result %s" (result.ToString())
             result |> shouldEqual (Error "invalid event")
 
         [<Fact>]
         let ``should reject event in past``() =
             let result = sanityCheck {exampleInput with RequestedTimeRange = {start=System.DateTime.Now.AddDays(-1.0);finish=System.DateTime.Now.AddDays(-1.0).AddHours(1.0)}}
-            printfn "result %s" (result.ToString())
             result |> shouldEqual (Error "cannot create historic event")
 
         [<Fact>]
         let ``should reject event in far future``() =
             let result = sanityCheck {exampleInput with RequestedTimeRange = {start=System.DateTime.Now.AddDays(3.0);finish=System.DateTime.Now.AddDays(3.0).AddHours(1.0)}}
-            printfn "result %s" (result.ToString())
             result |> shouldEqual (Error "cannot create event >3 hours in the future")
 
