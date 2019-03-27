@@ -142,7 +142,6 @@ let main argv =
                                 |> fun mr -> mr.calendarId
 
             GoogleCalendarClient.fetchEvents calendarService calendarId
-                |> Async.RunSynchronously
                 |> GoogleCalendarClient.logEvents (printfn "%s")
 
         if results.Contains Fetch_Calendars then
@@ -151,7 +150,6 @@ let main argv =
 
             calendarIds |> Seq.iter (fun calendarId ->
                 GoogleCalendarClient.fetchEvents calendarService calendarId
-                    |> Async.RunSynchronously
                     |> GoogleCalendarClient.logEvents (printfn "%s")
             )
 
@@ -191,7 +189,6 @@ let main argv =
             room
             |> fun room -> printf "%s\t" room.name; room.calendarId
             |> GoogleCalendarClient.fetchEvents calendarService
-            |> Async.RunSynchronously
             |> fun x -> x.Items
             |> Seq.map RoommateLogic.transformEvent
             |> List.ofSeq
@@ -224,7 +221,9 @@ let main argv =
                                         | Some (range,_) -> range
 
 
-            let mappedEvents = GoogleCalendarClient.fetchEvents2 calendarService room.calendarId
+            let mappedEvents = GoogleCalendarClient.fetchEvents calendarService room.calendarId
+                               |> fun e -> e.Items
+                               |> List.ofSeq
                                |> List.map GoogleEventMapper.mapEvent
 
 

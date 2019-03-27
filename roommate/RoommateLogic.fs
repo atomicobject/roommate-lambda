@@ -27,7 +27,7 @@ module RoommateLogic =
                 sprintf "Calendar ID %s" room.name |> logFn
                 let calendarService = serviceAccountSignIn config.serviceAccountEmail config.serviceAccountPrivKey config.serviceAccountAppName |> Async.RunSynchronously
 
-                let events = fetchEvents calendarService room.calendarId |> Async.RunSynchronously
+                let events = fetchEvents calendarService room.calendarId
 
                 events |> logEvents logFn
 
@@ -141,9 +141,10 @@ module RoommateLogic =
                 sprintf "Calendar ID %s" room.name |> logFn
                 let calendarService = serviceAccountSignIn config.serviceAccountEmail config.serviceAccountPrivKey config.serviceAccountAppName |> Async.RunSynchronously
 
-                let mappedEvents = GoogleCalendarClient.fetchEvents2 calendarService room.calendarId
+                let mappedEvents = GoogleCalendarClient.fetchEvents calendarService room.calendarId
+                                   |> (fun g -> g.Items)
+                                   |> List.ofSeq
                                    |> List.map GoogleEventMapper.mapEvent
-
 
                 mappedEvents
                     |> doEverything desiredMeetingTime roommateAccountEmail calendarService config.roommateConfig.myCalendar room

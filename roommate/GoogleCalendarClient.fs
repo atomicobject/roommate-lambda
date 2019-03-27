@@ -257,32 +257,15 @@ module GoogleCalendarClient =
 
             Result.Error "Edit was declined by room."
 
-
     let fetchEvents (calendarService:CalendarService) (LongCalId calendarId) =
-        async {
-            let request = calendarService.Events.List(calendarId)
-            request.TimeMin <-System.Nullable DateTime.Now
-            request.TimeMax <- System.Nullable (DateTime.Now.AddDays(1.0))
-            request.ShowDeleted <- System.Nullable false
-            request.SingleEvents <- System.Nullable true
-//            request.MaxResults <- System.Nullable 10
-            request.OrderBy <- System.Nullable EventsResource.ListRequest.OrderByEnum.StartTime
-
-            return! request.ExecuteAsync() |> Async.AwaitTask
-        }
-
-    let fetchEvents2 (calendarService:CalendarService) (LongCalId calendarId) =
         let request = calendarService.Events.List(calendarId)
         request.TimeMin <-System.Nullable DateTime.Now
         request.TimeMax <- System.Nullable (DateTime.Now.AddDays(1.0))
         request.ShowDeleted <- System.Nullable false
         request.SingleEvents <- System.Nullable true
-//            request.MaxResults <- System.Nullable 10
         request.OrderBy <- System.Nullable EventsResource.ListRequest.OrderByEnum.StartTime
 
         request.Execute()
-            |> (fun g -> g.Items)
-            |> List.ofSeq
 
     let isRoommateEvent (event:Event) =
         event.Creator.Email.StartsWith("roommate") && event.Creator.Email.EndsWith(".gserviceaccount.com")
