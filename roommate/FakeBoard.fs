@@ -51,15 +51,13 @@ module FakeBoard =
         lights |> List.map fst |> List.iter (fun x -> printLed x;printf "  ")
         printf "%d:%d" finish.Hour finish.Minute
 
-    let chooseNextTime (lights:(LightState*TimeRange) list) =
+
+    type DesiredMeetingTime = (TimeRange * int) option
+
+    let chooseNextTime (lights:(LightState*TimeRange) list) : DesiredMeetingTime =
         let numberedLights = lights |> List.mapi (fun i (lightState,timeRange) -> (lightState,timeRange,i))
         let maybeLight = numberedLights |> List.tryFind (function | (Available,_,_) -> true | _ -> false)
-        if maybeLight.IsNone then
-            printfn "room booked solid! no slots available."
-            None
-        else
-            let light,range,pos = maybeLight.Value
-            Some (range,pos)
+        maybeLight |> Option.map (fun (_,b,c) -> (b,c))
 
 
 

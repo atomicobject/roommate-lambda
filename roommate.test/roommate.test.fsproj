@@ -11,9 +11,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="RoommateLogicTest.fs" />
+    <Compile Include="ReservationMakerTest.fs" />
     <Compile Include="FakeBoardTest.fs" />
     <Compile Include="TimeUtilTest.fs" />
+    <Compile Include="GoogleEventMapperTest.fs" />
     <Compile Include="RoommateConfigTest.fs" />
   </ItemGroup>
 

@@ -1,12 +1,7 @@
 namespace RoommateLambda
 
-open System
-open System.Net
 
-open Amazon.Lambda.Core
-open Amazon.Lambda.APIGatewayEvents
 
-open Roommate
 open Roommate
 open Roommate.SecretReader
 
@@ -25,14 +20,16 @@ module FunctionImpls =
         }
 
 
-    let sendAnUpdateToCal logFn (calId:LongCalId) =
+    let mapEventsAndSendMessage calId config logFn (events:GoogleEventMapper.RoommateEvent list) =
+        let msg = events |> mapEventsToMessage
+        let topics = determineTopicsToPublishTo config.roommateConfig calId
+        sendMessageToTopics logFn config.mqttEndpoint topics msg
 
+    let sendAnUpdateToCal logFn (calId:LongCalId) =
         let config = readConfig()
-        calId
-            |> (fetchEventsForCalendar logFn config)
-            |> Result.bind (mapEventsToMessage)
-            |> Result.bind (determineTopicsToPublishTo config.roommateConfig)
-            |> Result.bind (sendMessageToTopics logFn config.mqttEndpoint)
+        let events = fetchEventsForCalendar logFn config calId
+                    |> Result.bind(fun e -> e.Items |> List.ofSeq |> List.map GoogleEventMapper.mapEvent |> Ok)
+        events |> Result.bind (mapEventsAndSendMessage calId config logFn)
 
     let sendAnUpdateToBoard (boardId:string) logFn =
 

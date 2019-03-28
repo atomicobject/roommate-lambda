@@ -1,19 +1,16 @@
 namespace Roommate
+open TimeUtil
 
 module GoogleCalendarClient =
 
     open System.Threading
     open System
-    open System
     open Google.Apis.Auth.OAuth2
-    open Google.Apis.Auth.OAuth2.Flows
     open Google.Apis.Calendar.v3;
     open Google.Apis.Calendar.v3.Data;
-    open Google.Apis.Services;
+    open Google.Apis.Services; // necessary for BaseClientService below
     open Google.Apis.Util.Store;
     open RoommateConfig
-    open System
-    open System.Threading
 
     let scopes = [CalendarService.Scope.CalendarReadonly;CalendarService.Scope.CalendarEvents]
     let humanSignIn clientId clientSecret =
@@ -68,7 +65,7 @@ module GoogleCalendarClient =
         | Success of 'T * int
         | Timeout of int
 
-    let pollNTimesOrUntil (numTimes:int) (fn: (unit -> 'T option)) : PollResult<'T> =
+    let private pollNTimesOrUntil (numTimes:int) (fn: (unit -> 'T option)) : PollResult<'T> =
         // todo: better
         let mutable keepGoing = true
         let mutable count = 0
@@ -89,7 +86,7 @@ module GoogleCalendarClient =
         | None -> Timeout count
         | Some x -> Success (x,count)
 
-    let pollForAttendee (calendarService:CalendarService) eventId calendarId =
+    let private pollForAttendee (calendarService:CalendarService) eventId calendarId =
         let pollFn () =
             let getRequest = calendarService.Events.Get(calendarId,eventId)
             let result = getRequest.Execute()
@@ -103,10 +100,10 @@ module GoogleCalendarClient =
         | Success (result,timeout) -> Ok result
         | Timeout count -> Result.Error (sprintf "Timed out after %d tries" count)
 
-    let createEvent (calendarService:CalendarService) calendarId (LongCalId attendee) start finish =
+    let createEvent (calendarService:CalendarService) calendarId (LongCalId attendee) (timeRange:TimeRange) =
         async {
-            let start = new EventDateTime(DateTime = System.Nullable start)
-            let finish = new EventDateTime(DateTime = System.Nullable finish)
+            let start = new EventDateTime(DateTime = System.Nullable timeRange.start)
+            let finish = new EventDateTime(DateTime = System.Nullable timeRange.finish)
 
             let room = new EventAttendee(Email = attendee)
             let event = new Event(
@@ -122,8 +119,6 @@ module GoogleCalendarClient =
             printfn "initial attendee response status %s" (creationResult.Attendees.Item(0).ResponseStatus)
             let latestResult = pollForAttendee calendarService creationResult.Id calendarId
 
-
-            let finalResult = latestResult
             let finalResult = latestResult
                                 |> Result.map singleAttendeesStatus
                                 |> function
@@ -145,7 +140,7 @@ module GoogleCalendarClient =
 
         }
 
-    let tryOrRevertEvent (calendarService:CalendarService) calId (event:Event) fn =
+    let private tryOrRevertEvent (calendarService:CalendarService) calId (event:Event) fn =
         let originalEvent = calendarService.Events.Get(calId,event.Id).Execute()
 
         let tryResult = fn ()
@@ -157,27 +152,8 @@ module GoogleCalendarClient =
             printfn "Restored event %s to %s-%s" (restoredEvent.Id) (restoredEvent.Start.ToString()) (restoredEvent.End.ToString())
             Result.Error e
 
-    let editEvent (calendarService:CalendarService) calId event =
+    let private editEvent (calendarService:CalendarService) calId event =
         async {
-            (*
-            plan:
-             - store original event start/end times
-             - pull target calendar ID from attendee
-             - query events from it within the time range of our event + 15 minutes
-             - if the only event is ours, capture its ID and proceed. else quit.
-             - edit roommate's event
-             - poll and check:
-               - attendee's status (to watch for "declined")
-               - attendee's event (to watch for it to grow)
-             - then, if:
-               - attendee's event grows to match roomate's event -> success
-               - status goes to declined ->
-                 - edit roommate event back to its original end time
-                 - log failure
-               - timeout ->
-                 - edit roommate event back to its original end time
-                 - log failure
-            *)
 
             let req = calendarService.Events.Update(event,calId,event.Id)
             let result = req.Execute()
@@ -199,15 +175,15 @@ module GoogleCalendarClient =
             return result
         }
 
-    let approxEqual (a:DateTime) (b:DateTime) =
+    let private approxEqual (a:DateTime) (b:DateTime) =
         (a - b).Duration() < TimeSpan.FromMinutes(1.0)
 
-    let containsAttendee (e:Event) roommateCalId =
+    let private containsAttendee (e:Event) roommateCalId =
 //        printfn "event attendees:"
         e.Attendees |> Seq.map (fun a -> a.Email) |> Seq.reduce (sprintf "%s,%s") |> printfn "%s"
         e.Attendees |> Seq.tryFind(fun a -> a.Email = roommateCalId) |> (fun x -> x.IsSome)
 
-    let editAssociatedEventLength (calendarService:CalendarService) roommateCalId roomCalId roommateEventId (start:DateTime) (finish:DateTime) =
+    let private editAssociatedEventLength (calendarService:CalendarService) roommateCalId roomCalId roommateEventId (start:DateTime) (finish:DateTime) =
         printfn "editAssociatedEventLength %s %s %s" roommateCalId roomCalId roommateEventId
         async {
             // first we get the event from the target room's calendar
@@ -224,17 +200,72 @@ module GoogleCalendarClient =
             return Ok editResult
         }
 
-    let fetchEvents (calendarService:CalendarService) (LongCalId calendarId) =
-        async {
-            let request = calendarService.Events.List(calendarId)
-            request.TimeMin <-System.Nullable DateTime.Now
-            request.ShowDeleted <- System.Nullable false
-            request.SingleEvents <- System.Nullable true
-            request.MaxResults <- System.Nullable 10
-            request.OrderBy <- System.Nullable EventsResource.ListRequest.OrderByEnum.StartTime
+    type EventExtension = {
+        eventId : string
+        oldRange : TimeRange
+        newRange : TimeRange
+    }
 
-            return! request.ExecuteAsync() |> Async.AwaitTask
-        }
+    type EditResult =
+        | Accepted of Event
+        | Rejected
+
+    type ReceivedEditResult =
+        | AcceptedEdit
+        | RejectedEdit
+        | EditError of string
+
+    let private pollForReceivedEdit (calendarService:CalendarService) (ext:EventExtension) attendeeCalendarId =
+        let pollFn () =
+            let getRequest = calendarService.Events.Get(attendeeCalendarId,ext.eventId)
+            let result = getRequest.Execute()
+            let newStatus = singleAttendeesStatus result
+            let newTimeRange = {start=result.Start.DateTime.Value;finish=result.End.DateTime.Value}
+//            printfn "%s,%s" newStatus (newTimeRange.ToString())
+            match newStatus,newTimeRange with
+            | "needsAction",_ -> None
+            | _,r when r = ext.oldRange -> None
+            | "declined",r when r = ext.newRange -> Some Rejected
+            | "accepted",r when r = ext.newRange -> Some (Accepted result)
+            | a,b -> failwith (sprintf "unanticipated polling status %s, %s" a (b.ToString()))
+
+        printfn "waiting for edit to be accepted by conference room calendar.."
+        let pollResult = pollNTimesOrUntil 20 pollFn
+
+        match pollResult with
+        | Success (Accepted result,_) -> AcceptedEdit
+        | Success (Rejected,_) -> RejectedEdit
+        | Timeout count -> EditError (sprintf "Timed out after %d tries" count)
+
+    let private editEventEndTime (calendarService:CalendarService) calId eventId endTime =
+        let updatedEvent : Event = new Event();
+        updatedEvent.End <- new EventDateTime()
+        updatedEvent.End.DateTime <- System.Nullable(endTime)
+        let req = calendarService.Events.Patch(updatedEvent,calId,eventId)
+        req.Execute()
+
+    let extendEvent (calendarService:CalendarService) (calId:string) (eventExtension:EventExtension) (LongCalId attendeeCalId) =
+        let editResult = editEventEndTime calendarService calId eventExtension.eventId eventExtension.newRange.finish
+        let receivedEditResult = pollForReceivedEdit calendarService eventExtension attendeeCalId
+        match receivedEditResult with
+        | AcceptedEdit -> Ok editResult
+        | EditError e -> Result.Error e
+        | RejectedEdit ->
+            printfn "Edit was declined by room. Reverting.."
+            let revertResult = editEventEndTime calendarService calId eventExtension.eventId eventExtension.oldRange.finish
+            printfn "revert result: %s" (revertResult.ToString())
+
+            Result.Error "Edit was declined by room."
+
+    let fetchEvents (calendarService:CalendarService) (LongCalId calendarId) =
+        let request = calendarService.Events.List(calendarId)
+        request.TimeMin <-System.Nullable DateTime.Now
+        request.TimeMax <- System.Nullable (DateTime.Now.AddDays(1.0))
+        request.ShowDeleted <- System.Nullable false
+        request.SingleEvents <- System.Nullable true
+        request.OrderBy <- System.Nullable EventsResource.ListRequest.OrderByEnum.StartTime
+
+        request.Execute()
 
     let isRoommateEvent (event:Event) =
         event.Creator.Email.StartsWith("roommate") && event.Creator.Email.EndsWith(".gserviceaccount.com")

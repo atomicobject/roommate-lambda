@@ -10,12 +10,14 @@
     <Compile Include="TimeUtil.fs" />
     <Compile Include="TermColors.fs" />
     <Compile Include="GoogleCalendarClient.fs" />
+    <Compile Include="GoogleEventMapper.fs" />
+    <Compile Include="ReservationMaker.fs" />
     <Compile Include="RoommateLogic.fs" />
     <Compile Include="FakeBoard.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.IotData" Version="3.3.0.84" />
-    <PackageReference Include="Google.Apis.Calendar.v3" Version="1.38.0.1508" />
+    <PackageReference Include="AWSSDK.IotData" Version="3.3.100.2" />
+    <PackageReference Include="Google.Apis.Calendar.v3" Version="1.38.0.1529" />
     <PackageReference Include="newtonsoft.json" Version="12.0.1" />
   </ItemGroup>
 </Project>
