@@ -72,7 +72,7 @@ module ReservationMaker =
             | CreateNewEvent timeRange ->
                 GoogleCalendarClient.createEvent calendarService myCalendar roomCalendarId timeRange |> Async.RunSynchronously
             | ExtendEvent reservationmakerExtension ->
-                let googleExtension : GoogleCalendarClient.EventExtension = {
+                let googleExtension : Types.EventExtension = {
                     eventId = reservationmakerExtension.eventId
                     newRange = reservationmakerExtension.newRange
                     oldRange = reservationmakerExtension.oldRange

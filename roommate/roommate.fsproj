@@ -7,7 +7,6 @@
     <Compile Include="Messages.fs" />
     <Compile Include="RoommateConfig.fs" />
     <Compile Include="SecretReader.fs" />
-    <Compile Include="TimeUtil.fs" />
     <Compile Include="TermColors.fs" />
     <Compile Include="GoogleCalendarClient.fs" />
     <Compile Include="GoogleEventMapper.fs" />
@@ -19,5 +18,8 @@
     <PackageReference Include="AWSSDK.IotData" Version="3.3.100.2" />
     <PackageReference Include="Google.Apis.Calendar.v3" Version="1.38.0.1529" />
     <PackageReference Include="newtonsoft.json" Version="12.0.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\common\common.fsproj" />
   </ItemGroup>
 </Project>

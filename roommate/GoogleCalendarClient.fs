@@ -200,12 +200,6 @@ module GoogleCalendarClient =
             return Ok editResult
         }
 
-    type EventExtension = {
-        eventId : string
-        oldRange : TimeRange
-        newRange : TimeRange
-    }
-
     type EditResult =
         | Accepted of Event
         | Rejected
@@ -215,7 +209,7 @@ module GoogleCalendarClient =
         | RejectedEdit
         | EditError of string
 
-    let private pollForReceivedEdit (calendarService:CalendarService) (ext:EventExtension) attendeeCalendarId =
+    let private pollForReceivedEdit (calendarService:CalendarService) (ext:Types.EventExtension) attendeeCalendarId =
         let pollFn () =
             let getRequest = calendarService.Events.Get(attendeeCalendarId,ext.eventId)
             let result = getRequest.Execute()
@@ -244,7 +238,7 @@ module GoogleCalendarClient =
         let req = calendarService.Events.Patch(updatedEvent,calId,eventId)
         req.Execute()
 
-    let extendEvent (calendarService:CalendarService) (calId:string) (eventExtension:EventExtension) (LongCalId attendeeCalId) =
+    let extendEvent (calendarService:CalendarService) (calId:string) (eventExtension:Types.EventExtension) (LongCalId attendeeCalId) =
         let editResult = editEventEndTime calendarService calId eventExtension.eventId eventExtension.newRange.finish
         let receivedEditResult = pollForReceivedEdit calendarService eventExtension attendeeCalId
         match receivedEditResult with
