@@ -58,9 +58,6 @@ module GoogleCalendarClient =
         // todo: handle attendees length != 1
         (event.Attendees.Item(0).ResponseStatus)
 
-
-    let x () = Some 5
-
     type PollResult<'T> =
         | Success of 'T * int
         | Timeout of int

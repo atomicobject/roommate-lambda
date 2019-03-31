@@ -5,11 +5,8 @@
   <ItemGroup>
     <Compile Include="AwsIotClient.fs" />
     <Compile Include="Messages.fs" />
-    <Compile Include="SecretReader.fs" />
-    <Compile Include="TermColors.fs" />
     <Compile Include="ReservationMaker.fs" />
     <Compile Include="RoommateLogic.fs" />
-    <Compile Include="FakeBoard.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AWSSDK.IotData" Version="3.3.100.3" />

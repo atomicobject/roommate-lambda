@@ -5,12 +5,6 @@ module FakeBoard =
     open TimeUtil
     open Types
 
-    let roundDown (d:DateTime) =
-        d.Date.AddHours(float d.Hour).AddMinutes((d.Minute / 15) * 15 |> float)
-
-    let roundUp (d:DateTime) =
-        d.AddMinutes 15.0 |> roundDown
-
     let timeSlots (d:DateTime) : TimeRange list =
         [0..7] |> List.map (fun i -> {start=d.AddMinutes(i * 15 |> float).AddSeconds(1.0);finish=d.AddMinutes(i * 15 + 15 |> float).AddSeconds(-1.0)})
 
