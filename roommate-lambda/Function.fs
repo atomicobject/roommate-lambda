@@ -130,7 +130,7 @@ type Functions() =
         calIds |> Seq.iter (fun calId ->
                 logFn <| sprintf "calendar %s" (calId.ToString())
                 try
-                    GoogleCalendarClient.activateExpiringWebhook calendarService calId config.webhookUrl expiration_ms |> Async.RunSynchronously |> ignore
+                    GoogleCalendarClient.activateExpiringWebhook calendarService calId config.webhookUrl expiration_ms |> ignore
                     printfn " ..success"
                 with
                 | :? System.AggregateException as e  when e.InnerException.Message.Contains("not unique") -> printfn " .. already active"
