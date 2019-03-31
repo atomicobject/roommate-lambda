@@ -7,6 +7,10 @@
     <ItemGroup>
         <Compile Include="TimeUtil.fs" />
         <Compile Include="Types.fs" />
+        <Compile Include="RoommateConfig.fs" />
     </ItemGroup>
 
+    <ItemGroup>
+        <PackageReference Include="newtonsoft.json" Version="12.0.1" />
+    </ItemGroup>
 </Project>

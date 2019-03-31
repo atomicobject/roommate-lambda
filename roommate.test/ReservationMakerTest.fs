@@ -7,7 +7,7 @@ module ReservationMakerTest =
     open Roommate
     open ReservationMaker
 
-    let anEvent : GoogleEventMapper.RoommateEvent = {
+    let anEvent : Types.RoommateEvent = {
         gCalId = "123123123id"
         timeRange = {
             start = System.DateTime.Parse("03/15/2019 23:00:01")

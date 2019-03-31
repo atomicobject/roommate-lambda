@@ -1,10 +1,9 @@
 namespace Roommate
-open GoogleEventMapper
 
 module FakeBoard =
-    open RoommateLogic
     open System
     open TimeUtil
+    open Types
 
     let roundDown (d:DateTime) =
         d.Date.AddHours(float d.Hour).AddMinutes((d.Minute / 15) * 15 |> float)

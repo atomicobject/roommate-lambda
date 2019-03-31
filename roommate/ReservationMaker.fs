@@ -1,11 +1,10 @@
 namespace Roommate
-open GoogleEventMapper
 open TimeUtil
 
 module ReservationMaker =
 
     type InputInformation = {
-        ConferenceRoomAccountEvents : RoommateEvent list
+        ConferenceRoomAccountEvents : Types.RoommateEvent list
         RequestedTimeRange : TimeRange
     }
     type ProcessResult =

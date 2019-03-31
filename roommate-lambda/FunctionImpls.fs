@@ -20,7 +20,7 @@ module FunctionImpls =
         }
 
 
-    let mapEventsAndSendMessage calId config logFn (events:GoogleEventMapper.RoommateEvent list) =
+    let mapEventsAndSendMessage calId config logFn (events:Types.RoommateEvent list) =
         let msg = events |> mapEventsToMessage
         let topics = determineTopicsToPublishTo config.roommateConfig calId
         sendMessageToTopics logFn config.mqttEndpoint topics msg

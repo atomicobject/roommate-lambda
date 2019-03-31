@@ -43,7 +43,7 @@ module RoommateLogic =
         // https://stackoverflow.com/a/115034
         dt.ToString("s", System.Globalization.CultureInfo.InvariantCulture) + "Z"
 
-    let mapEventsToMessage (events:GoogleEventMapper.RoommateEvent list) = //Google.Apis.Calendar.v3.Data.Events) =
+    let mapEventsToMessage (events:Types.RoommateEvent list) = //Google.Apis.Calendar.v3.Data.Events) =
         // todo: unit test
         let msg : Messages.CalendarUpdate = {
             time = iso8601datez DateTime.UtcNow
@@ -82,7 +82,7 @@ module RoommateLogic =
             |> Option.map lengthen
 
     let doEverything desiredMeetingTime roommateAccountEmail calendarService myCalendar (room:MeetingRoom) mappedEvents =
-        let logMappedEvents (events:GoogleEventMapper.RoommateEvent list) =
+        let logMappedEvents (events:Types.RoommateEvent list) =
             printfn "fetched %d events." events.Length
             events
 
@@ -95,7 +95,7 @@ module RoommateLogic =
                 printfn "Extending existing event %s => %s" (printRange ext.oldRange) (printRange ext.newRange)
             Ok op
 
-        let spliceInEvent (mappedEvents:GoogleEventMapper.RoommateEvent list) (mappedNewEvent:GoogleEventMapper.RoommateEvent) =
+        let spliceInEvent (mappedEvents:Types.RoommateEvent list) (mappedNewEvent:Types.RoommateEvent) =
                 let otherEvents = mappedEvents |> List.where (fun e -> e.gCalId <> mappedNewEvent.gCalId)
                 mappedNewEvent::otherEvents |> List.sortBy(fun e -> e.timeRange.start)
 
