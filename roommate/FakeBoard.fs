@@ -1,4 +1,5 @@
 namespace Roommate
+open GoogleEventMapper
 
 module FakeBoard =
     open RoommateLogic
@@ -32,14 +33,14 @@ module FakeBoard =
     let getLights (events: RoommateEvent list) : (LightState*TimeRange) list =
         let start = DateTime.Now |> roundDown
         let totalRange = {start=start;finish=start.AddHours(2.0)}
-        let relevantEvents = events |> List.where (fun e -> timeRangeIntersects e.range totalRange)
+        let relevantEvents = events |> List.where (fun e -> timeRangeIntersects e.timeRange totalRange)
         let slots = start |> timeSlots
-        let currentEvent = relevantEvents |> List.tryFind (fun e -> timeRangeIntersects e.range slots.[0])
+        let currentEvent = relevantEvents |> List.tryFind (fun e -> timeRangeIntersects e.timeRange slots.[0])
 
         slots |> List.map (fun slotRange ->
-                    if currentEvent.IsSome && timeRangeIntersects currentEvent.Value.range slotRange then
+                    if currentEvent.IsSome && timeRangeIntersects currentEvent.Value.timeRange slotRange then
                         CurrentMeeting,slotRange
-                    else if (relevantEvents |> List.exists (fun e -> timeRangeIntersects slotRange e.range)) then
+                    else if (relevantEvents |> List.exists (fun e -> timeRangeIntersects slotRange e.timeRange)) then
                         Busy,slotRange
                     else Available,slotRange )
 

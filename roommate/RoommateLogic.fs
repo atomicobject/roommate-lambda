@@ -34,26 +34,10 @@ module RoommateLogic =
                 events
                 )
 
-    type RoommateEvent = {
-        range : TimeRange
-        gcalId : string
-        isRoommateEvent : bool
-    }
-
     type CalendarCreateAction =
         | CreateEvent of TimeRange
         | UpdateEvent of string * DateTime * DateTime
         | Nothing of string
-
-    let transformEvent (event:Google.Apis.Calendar.v3.Data.Event) : RoommateEvent =
-        {
-            range = {
-                start = event.Start.DateTime.Value
-                finish = event.End.DateTime.Value
-            }
-            gcalId=event.Id
-            isRoommateEvent = isRoommateEvent event
-        }
 
     let iso8601datez (dt:DateTime) =
         // https://stackoverflow.com/a/115034

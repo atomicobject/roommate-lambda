@@ -7,6 +7,7 @@ open SecretReader
 open GoogleCalendarClient
 open Roommate.RoommateConfig
 open FakeBoard
+open Roommate
 open Roommate.TimeUtil
 
  (*
@@ -190,7 +191,7 @@ let main argv =
             |> fun room -> printf "%s\t" room.name; room.calendarId
             |> GoogleCalendarClient.fetchEvents calendarService
             |> fun x -> x.Items
-            |> Seq.map RoommateLogic.transformEvent
+            |> Seq.map GoogleEventMapper.mapEvent
             |> List.ofSeq
             |> getLights
 

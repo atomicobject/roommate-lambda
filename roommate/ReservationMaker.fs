@@ -8,14 +8,9 @@ module ReservationMaker =
         ConferenceRoomAccountEvents : RoommateEvent list
         RequestedTimeRange : TimeRange
     }
-    type EventExtension = {
-        eventId : string
-        newRange : TimeRange
-        oldRange : TimeRange
-    }
     type ProcessResult =
         | CreateNewEvent of TimeRange
-        | ExtendEvent of EventExtension
+        | ExtendEvent of Types.EventExtension
 
     let getAdjacentRoommateEvents input roommateAccountEmail =
         let isCloseTo (a:System.DateTime) (b:System.DateTime) =
