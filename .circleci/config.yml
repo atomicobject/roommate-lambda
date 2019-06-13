@@ -2,7 +2,7 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: microsoft/dotnet:2.2-sdk
+      - image: mcr.microsoft.com/dotnet/core/sdk:2.2
     steps:
       - checkout
       - run: dotnet --version && dotnet build
@@ -13,7 +13,7 @@ jobs:
 
   deploy:
     docker:
-      - image: microsoft/dotnet:2.2-sdk
+      - image: mcr.microsoft.com/dotnet/core/sdk:2.2
     steps:
       - checkout
       - run:
