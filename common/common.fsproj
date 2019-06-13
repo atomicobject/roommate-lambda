@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="TimeUtil.fs" />
+        <Compile Include="Types.fs" />
+        <Compile Include="SecretReader.fs" />
+        <Compile Include="RoommateConfig.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="newtonsoft.json" Version="12.0.2" />
+    </ItemGroup>
+</Project>

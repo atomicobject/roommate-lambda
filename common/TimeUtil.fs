@@ -33,3 +33,8 @@ module TimeUtil =
     let printRange (range:TimeRange) =
         sprintf "%s-%s" (range.start.TimeOfDay.ToString()) (range.finish.TimeOfDay.ToString())
 
+    let roundDown (d:DateTime) =
+        d.Date.AddHours(float d.Hour).AddMinutes((d.Minute / 15) * 15 |> float)
+
+    let roundUp (d:DateTime) =
+        d.AddMinutes 15.0 |> roundDown

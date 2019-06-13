@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <RootNamespace>google_calendar_client</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="GoogleCalendarClient.fs" />
+        <Compile Include="GoogleEventMapper.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\common\common.fsproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+<!--        <PackageReference Include="AWSSDK.IotData" Version="3.3.100.2" />-->
+        <PackageReference Include="Google.Apis.Calendar.v3" Version="1.40.2.1611" />
+<!--        <PackageReference Include="newtonsoft.json" Version="12.0.1" />-->
+    </ItemGroup>
+</Project>

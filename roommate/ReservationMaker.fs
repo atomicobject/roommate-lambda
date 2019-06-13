@@ -1,21 +1,15 @@
 namespace Roommate
-open GoogleEventMapper
 open TimeUtil
 
 module ReservationMaker =
 
     type InputInformation = {
-        ConferenceRoomAccountEvents : RoommateEvent list
+        ConferenceRoomAccountEvents : Types.RoommateEvent list
         RequestedTimeRange : TimeRange
-    }
-    type EventExtension = {
-        eventId : string
-        newRange : TimeRange
-        oldRange : TimeRange
     }
     type ProcessResult =
         | CreateNewEvent of TimeRange
-        | ExtendEvent of EventExtension
+        | ExtendEvent of Types.EventExtension
 
     let getAdjacentRoommateEvents input roommateAccountEmail =
         let isCloseTo (a:System.DateTime) (b:System.DateTime) =
@@ -70,9 +64,9 @@ module ReservationMaker =
     let executeOperation calendarService myCalendar roomCalendarId op =
         match op with
             | CreateNewEvent timeRange ->
-                GoogleCalendarClient.createEvent calendarService myCalendar roomCalendarId timeRange |> Async.RunSynchronously
+                GoogleCalendarClient.createEvent calendarService myCalendar roomCalendarId timeRange
             | ExtendEvent reservationmakerExtension ->
-                let googleExtension : GoogleCalendarClient.EventExtension = {
+                let googleExtension : Types.EventExtension = {
                     eventId = reservationmakerExtension.eventId
                     newRange = reservationmakerExtension.newRange
                     oldRange = reservationmakerExtension.oldRange

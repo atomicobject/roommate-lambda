@@ -20,7 +20,7 @@ module FunctionImpls =
         }
 
 
-    let mapEventsAndSendMessage calId config logFn (events:GoogleEventMapper.RoommateEvent list) =
+    let mapEventsAndSendMessage calId config logFn (events:Types.RoommateEvent list) =
         let msg = events |> mapEventsToMessage
         let topics = determineTopicsToPublishTo config.roommateConfig calId
         sendMessageToTopics logFn config.mqttEndpoint topics msg
@@ -55,7 +55,7 @@ module FunctionImpls =
             gh)
         |> Result.bind (fun gh ->
                             match gh.TryFind "X-Goog-Resource-URI" with
-                            | None -> Error "No X-Google-Resource-ID header found."
+                            | None -> Error "No X-Google-Resource-URI header found."
                             | Some resourceId -> Ok resourceId)
         |> Result.map calIdFromURI
 

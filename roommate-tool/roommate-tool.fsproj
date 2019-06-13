@@ -7,6 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="TermColors.fs" />
+    <Compile Include="FakeBoard.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
@@ -15,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Argu" Version="5.2.0" />
+    <PackageReference Include="Argu" Version="5.4.0" />
   </ItemGroup>
 
 </Project>

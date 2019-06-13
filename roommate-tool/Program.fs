@@ -7,6 +7,7 @@ open SecretReader
 open GoogleCalendarClient
 open Roommate.RoommateConfig
 open FakeBoard
+open Roommate
 open Roommate.TimeUtil
 
  (*
@@ -128,7 +129,6 @@ let main argv =
             printfn "Retrieving meeting rooms (these can be pasted into config file).."
 
             GoogleCalendarClient.fetchCalendarIds calendarService
-            |> Async.RunSynchronously
             |> Seq.map (fun x -> (x.name |> shortName, x.calId |> shorten))
             |> Map.ofSeq
             |> RoommateConfig.serializeIndented
@@ -155,12 +155,12 @@ let main argv =
 
         if results.Contains Subscribe_Webhook then
             let calendar,endpoint = results.GetResult Subscribe_Webhook
-            let result = GoogleCalendarClient.activateWebhook calendarService (LongCalId calendar) endpoint |> Async.RunSynchronously
+            let result = GoogleCalendarClient.activateWebhook calendarService (LongCalId calendar) endpoint
             printfn "subscribe result: \n%s" (serializeIndented result)
 
         if results.Contains Unsubscribe_Webhook then
             let calendar,resourceId,endpoint = results.GetResult Unsubscribe_Webhook
-            let result = GoogleCalendarClient.deactivateWebhook calendarService (LongCalId calendar) endpoint resourceId |> Async.RunSynchronously
+            let result = GoogleCalendarClient.deactivateWebhook calendarService (LongCalId calendar) endpoint resourceId
             printfn "unsubscribe result: \n%s" (serializeIndented result)
 
         if results.Contains Subscribe_All_Webhooks then
@@ -169,7 +169,7 @@ let main argv =
             calendarIds |> List.iter (fun calId ->
                 printf "calendar %s" (calId.ToString())
                 try
-                    GoogleCalendarClient.activateWebhook calendarService calId endpoint |> Async.RunSynchronously |> ignore
+                    GoogleCalendarClient.activateWebhook calendarService calId endpoint |> ignore
                     printfn " ..success"
                 with
                 | :? System.AggregateException as e  when e.InnerException.Message.Contains("not unique") -> printfn " .. already active"
@@ -190,7 +190,7 @@ let main argv =
             |> fun room -> printf "%s\t" room.name; room.calendarId
             |> GoogleCalendarClient.fetchEvents calendarService
             |> fun x -> x.Items
-            |> Seq.map RoommateLogic.transformEvent
+            |> Seq.map GoogleEventMapper.mapEvent
             |> List.ofSeq
             |> getLights
 

@@ -4,20 +4,7 @@ module GoogleEventMapper =
 
     open Google.Apis.Calendar.v3.Data;
 
-    type RoommateEventAttendee = {
-        name: string
-        email: string
-        responseStatus: string // todo: enum
-    }
-    type RoommateEvent = {
-        gCalId: string
-        timeRange: TimeUtil.TimeRange
-        creatorEmail: string
-        attendees: RoommateEventAttendee list
-        } // attendees - name, email, responseStatus
-        // updated
-
-    let mapEvent (event: Event): RoommateEvent =
+    let mapEvent (event: Event): Types.RoommateEvent =
         {
             gCalId = event.Id
             timeRange = {
@@ -32,6 +19,6 @@ module GoogleEventMapper =
             })
         }
 
-    let isRoommateEvent (event:RoommateEvent) =
+    let isRoommateEvent (event:Types.RoommateEvent) =
         event.creatorEmail.StartsWith("roommate") && event.creatorEmail.EndsWith(".gserviceaccount.com")
 

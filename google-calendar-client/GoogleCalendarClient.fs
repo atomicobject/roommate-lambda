@@ -45,21 +45,16 @@ module GoogleCalendarClient =
     }
 
     let fetchCalendarIds (calendarService:CalendarService) =
-        async {
-            let request = calendarService.CalendarList.List()
-            let! result = request.ExecuteAsync() |> Async.AwaitTask
-            return result.Items
-                |> Seq.filter (fun cal -> cal.Summary.StartsWith("AO"))
-                |> Seq.filter (fun cal -> cal.Summary.Contains("Social") |> not)
-                |> Seq.map (fun item -> {calId=LongCalId item.Id;name=item.Summary})
-        }
+        let request = calendarService.CalendarList.List()
+        let result = request.Execute()
+        result.Items
+            |> Seq.filter (fun cal -> cal.Summary.StartsWith("AO"))
+            |> Seq.filter (fun cal -> cal.Summary.Contains("Social") |> not)
+            |> Seq.map (fun item -> {calId=LongCalId item.Id;name=item.Summary})
 
     let singleAttendeesStatus (event:Event) =
         // todo: handle attendees length != 1
         (event.Attendees.Item(0).ResponseStatus)
-
-
-    let x () = Some 5
 
     type PollResult<'T> =
         | Success of 'T * int
@@ -101,44 +96,42 @@ module GoogleCalendarClient =
         | Timeout count -> Result.Error (sprintf "Timed out after %d tries" count)
 
     let createEvent (calendarService:CalendarService) calendarId (LongCalId attendee) (timeRange:TimeRange) =
-        async {
-            let start = new EventDateTime(DateTime = System.Nullable timeRange.start)
-            let finish = new EventDateTime(DateTime = System.Nullable timeRange.finish)
+        let start = new EventDateTime(DateTime = System.Nullable timeRange.start)
+        let finish = new EventDateTime(DateTime = System.Nullable timeRange.finish)
 
-            let room = new EventAttendee(Email = attendee)
-            let event = new Event(
-                            Start = start,
-                            End = finish,
-                            Summary = "Roommate reservation",
-                            Attendees = [|room|],
-                            Description = "This event was created by the roommate system.\n\n(Just testing so far. Ask Jordan and John about it!)"
-                            )
-            let request = calendarService.Events.Insert(event, calendarId)
-            let! creationResult = request.ExecuteAsync() |> Async.AwaitTask
-            printfn "Successfully created event on %s" calendarId
-            printfn "initial attendee response status %s" (creationResult.Attendees.Item(0).ResponseStatus)
-            let latestResult = pollForAttendee calendarService creationResult.Id calendarId
+        let room = new EventAttendee(Email = attendee)
+        let event = new Event(
+                        Start = start,
+                        End = finish,
+                        Summary = "Roommate reservation",
+                        Attendees = [|room|],
+                        Description = "This event was created by the roommate system.\n\n(Just testing so far. Ask Jordan and John about it!)"
+                        )
+        let request = calendarService.Events.Insert(event, calendarId)
+        let creationResult = request.Execute()
+        printfn "Successfully created event on %s" calendarId
+        printfn "initial attendee response status %s" (creationResult.Attendees.Item(0).ResponseStatus)
+        let latestResult = pollForAttendee calendarService creationResult.Id calendarId
 
-            let finalResult = latestResult
-                                |> Result.map singleAttendeesStatus
-                                |> function
-                                    | Ok "needsAction" -> Result.Error "timed out, apparently"
-                                    | Ok "accepted" -> Result.Ok creationResult
-                                    | Ok "declined" -> Result.Error "declined"
-                                    | Result.Error s -> Result.Error s
-                                    | _ -> failwith "bonk"
+        let finalResult = latestResult
+                            |> Result.map singleAttendeesStatus
+                            |> function
+                                | Ok "needsAction" -> Result.Error "timed out, apparently"
+                                | Ok "accepted" -> Result.Ok creationResult
+                                | Ok "declined" -> Result.Error "declined"
+                                | Result.Error s -> Result.Error s
+                                | _ -> failwith "bonk"
 
 
-            match finalResult with
-            | Ok _ -> () |> ignore
-            | Result.Error s ->
-                printfn "Attendee status '%s'; removing event from Roommate's calendar" s
-                let req = calendarService.Events.Delete(calendarId, creationResult.Id)
-                let result = req.Execute()
-                printfn "deletion result '%s'" result
-            return finalResult
+        match finalResult with
+        | Ok _ -> () |> ignore
+        | Result.Error s ->
+            printfn "Attendee status '%s'; removing event from Roommate's calendar" s
+            let req = calendarService.Events.Delete(calendarId, creationResult.Id)
+            let result = req.Execute()
+            printfn "deletion result '%s'" result
+        finalResult
 
-        }
 
     let private tryOrRevertEvent (calendarService:CalendarService) calId (event:Event) fn =
         let originalEvent = calendarService.Events.Get(calId,event.Id).Execute()
@@ -153,27 +146,24 @@ module GoogleCalendarClient =
             Result.Error e
 
     let private editEvent (calendarService:CalendarService) calId event =
-        async {
+        let req = calendarService.Events.Update(event,calId,event.Id)
+        let result = req.Execute()
+        printfn "\nattendee %s" (Newtonsoft.Json.JsonConvert.SerializeObject(result.Attendees.Item(0)))
 
-            let req = calendarService.Events.Update(event,calId,event.Id)
-            let result = req.Execute()
-            printfn "\nattendee %s" (Newtonsoft.Json.JsonConvert.SerializeObject(result.Attendees.Item(0)))
+        let attendee_email = result.Attendees.Item(0).Email
+        let req2 = calendarService.Calendars.Get( attendee_email )
+        let cal2 = req2.Execute()
+        printfn "\nattendee calendar? %s" (Newtonsoft.Json.JsonConvert.SerializeObject(cal2))
 
-            let attendee_email = result.Attendees.Item(0).Email
-            let req2 = calendarService.Calendars.Get( attendee_email )
-            let cal2 = req2.Execute()
-            printfn "\nattendee calendar? %s" (Newtonsoft.Json.JsonConvert.SerializeObject(cal2))
+        let req3 = calendarService.Events.List(attendee_email)
+        req3.TimeMin <- System.Nullable(result.Start.DateTime.Value.AddDays(-1.0))
+        req3.TimeMax <- System.Nullable(result.Start.DateTime.Value.AddDays(1.0))
+        let events = req3.Execute()
 
-            let req3 = calendarService.Events.List(attendee_email)
-            req3.TimeMin <- System.Nullable(result.Start.DateTime.Value.AddDays(-1.0))
-            req3.TimeMax <- System.Nullable(result.Start.DateTime.Value.AddDays(1.0))
-            let events = req3.Execute()
-
-            printfn "\nattendee events %s"  (Newtonsoft.Json.JsonConvert.SerializeObject(events))
+        printfn "\nattendee events %s"  (Newtonsoft.Json.JsonConvert.SerializeObject(events))
 
 
-            return result
-        }
+        result
 
     let private approxEqual (a:DateTime) (b:DateTime) =
         (a - b).Duration() < TimeSpan.FromMinutes(1.0)
@@ -185,26 +175,18 @@ module GoogleCalendarClient =
 
     let private editAssociatedEventLength (calendarService:CalendarService) roommateCalId roomCalId roommateEventId (start:DateTime) (finish:DateTime) =
         printfn "editAssociatedEventLength %s %s %s" roommateCalId roomCalId roommateEventId
-        async {
-            // first we get the event from the target room's calendar
-            let! roomEvent = calendarService.Events.Get(roomCalId,roommateEventId).ExecuteAsync() |> Async.AwaitTask
-            let roommateEvent = calendarService.Events.Get(roommateCalId,roommateEventId).Execute()
+        // first we get the event from the target room's calendar
+        let roomEvent = calendarService.Events.Get(roomCalId,roommateEventId).Execute()
+        let roommateEvent = calendarService.Events.Get(roommateCalId,roommateEventId).Execute()
 
 //            printfn "room event %s" (Newtonsoft.Json.JsonConvert.SerializeObject(roomEvent))
 //            printfn "roommate event: %s" (Newtonsoft.Json.JsonConvert.SerializeObject(roommateEvent))
 
-            // edit the event (which will send an update to the room, which may accept/decline the change)
-            roommateEvent.Start.DateTime <- System.Nullable start
-            roommateEvent.End.DateTime <- System.Nullable finish
-            let! editResult = editEvent calendarService roommateCalId roommateEvent
-            return Ok editResult
-        }
-
-    type EventExtension = {
-        eventId : string
-        oldRange : TimeRange
-        newRange : TimeRange
-    }
+        // edit the event (which will send an update to the room, which may accept/decline the change)
+        roommateEvent.Start.DateTime <- System.Nullable start
+        roommateEvent.End.DateTime <- System.Nullable finish
+        let editResult = editEvent calendarService roommateCalId roommateEvent
+        Ok editResult
 
     type EditResult =
         | Accepted of Event
@@ -215,7 +197,7 @@ module GoogleCalendarClient =
         | RejectedEdit
         | EditError of string
 
-    let private pollForReceivedEdit (calendarService:CalendarService) (ext:EventExtension) attendeeCalendarId =
+    let private pollForReceivedEdit (calendarService:CalendarService) (ext:Types.EventExtension) attendeeCalendarId =
         let pollFn () =
             let getRequest = calendarService.Events.Get(attendeeCalendarId,ext.eventId)
             let result = getRequest.Execute()
@@ -244,7 +226,7 @@ module GoogleCalendarClient =
         let req = calendarService.Events.Patch(updatedEvent,calId,eventId)
         req.Execute()
 
-    let extendEvent (calendarService:CalendarService) (calId:string) (eventExtension:EventExtension) (LongCalId attendeeCalId) =
+    let extendEvent (calendarService:CalendarService) (calId:string) (eventExtension:Types.EventExtension) (LongCalId attendeeCalId) =
         let editResult = editEventEndTime calendarService calId eventExtension.eventId eventExtension.newRange.finish
         let receivedEditResult = pollForReceivedEdit calendarService eventExtension attendeeCalId
         match receivedEditResult with
@@ -300,50 +282,45 @@ module GoogleCalendarClient =
                 )
 
     let activateExpiringWebhook (calendarService:CalendarService) (LongCalId calendarId) url expiration_ms =
-        async {
-            let d : int32 = DateTime.Now.Date.Day
-            let subscriptionId = sprintf "roommate-lambda-%d-%s" d (shorten (LongCalId calendarId))
-            // https://developers.google.com/calendar/v3/push#making-watch-requests
-            let channel = new Channel(Address = url, Type = "web_hook",Id = subscriptionId, Expiration = System.Nullable expiration_ms)
+        let d : int32 = DateTime.Now.Date.Day
+        let subscriptionId = sprintf "roommate-lambda-%d-%s" d (shorten (LongCalId calendarId))
+        // https://developers.google.com/calendar/v3/push#making-watch-requests
+        let channel = new Channel(Address = url, Type = "web_hook",Id = subscriptionId, Expiration = System.Nullable expiration_ms)
 
-            let request = calendarService.Events.Watch(channel,calendarId)
+        let request = calendarService.Events.Watch(channel,calendarId)
 
-            // Execute the request
-            let! result =request.ExecuteAsync() |> Async.AwaitTask
-            return result
-        }
+        // Execute the request
+        let result = request.Execute()
+        result
+
     let activateWebhook (calendarService:CalendarService) (LongCalId calendarId) url =
-        async {
-            let subscriptionId = sprintf "roommate-tool-%s" (shorten (LongCalId calendarId))
-            let channel = new Channel(Address = url, Type = "web_hook",Id = subscriptionId)
+        let subscriptionId = sprintf "roommate-tool-%s" (shorten (LongCalId calendarId))
+        let channel = new Channel(Address = url, Type = "web_hook",Id = subscriptionId)
 
-            let request = calendarService.Events.Watch(channel,calendarId)
+        let request = calendarService.Events.Watch(channel,calendarId)
 
-            // Execute the request
-            let! result =request.ExecuteAsync() |> Async.AwaitTask
-            return result
-        }
+        // Execute the request
+        let result =request.Execute()
+        result
 
     let deactivateWebhook (calendarService:CalendarService) (LongCalId calendarId) url resourceId =
-        async {
-            (*
-                https://developers.google.com/calendar/v3/push#making-watch-requests
+        (*
+            https://developers.google.com/calendar/v3/push#making-watch-requests
 
-                The Subscription ID is a value we specify at the time of creating the channel.
-                The Resource ID comes from Google.
+            The Subscription ID is a value we specify at the time of creating the channel.
+            The Resource ID comes from Google.
 
-                Both are given to us in the HTTP Headers with each push notification, and
-                can be seen in the Lambda logs.
+            Both are given to us in the HTTP Headers with each push notification, and
+            can be seen in the Lambda logs.
 
-            *)
-            let subscriptionId = sprintf "roommate-tool-%s" (shorten (LongCalId calendarId))
-            let channel = new Channel(ResourceId = resourceId, Id = subscriptionId)
-            let request = calendarService.Channels.Stop(channel);
+        *)
+        let subscriptionId = sprintf "roommate-tool-%s" (shorten (LongCalId calendarId))
+        let channel = new Channel(ResourceId = resourceId, Id = subscriptionId)
+        let request = calendarService.Channels.Stop(channel);
 
-            // Execute the request
-            let! result = request.ExecuteAsync() |> Async.AwaitTask
-            return result
-        }
+        // Execute the request
+        let result = request.Execute
+        result
 
     let summarizeEvent (event:Event) =
         sprintf "%s\n" event.Summary +

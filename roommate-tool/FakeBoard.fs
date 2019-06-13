@@ -1,15 +1,9 @@
 namespace Roommate
 
 module FakeBoard =
-    open RoommateLogic
     open System
     open TimeUtil
-
-    let roundDown (d:DateTime) =
-        d.Date.AddHours(float d.Hour).AddMinutes((d.Minute / 15) * 15 |> float)
-
-    let roundUp (d:DateTime) =
-        d.AddMinutes 15.0 |> roundDown
+    open Types
 
     let timeSlots (d:DateTime) : TimeRange list =
         [0..7] |> List.map (fun i -> {start=d.AddMinutes(i * 15 |> float).AddSeconds(1.0);finish=d.AddMinutes(i * 15 + 15 |> float).AddSeconds(-1.0)})
@@ -32,14 +26,14 @@ module FakeBoard =
     let getLights (events: RoommateEvent list) : (LightState*TimeRange) list =
         let start = DateTime.Now |> roundDown
         let totalRange = {start=start;finish=start.AddHours(2.0)}
-        let relevantEvents = events |> List.where (fun e -> timeRangeIntersects e.range totalRange)
+        let relevantEvents = events |> List.where (fun e -> timeRangeIntersects e.timeRange totalRange)
         let slots = start |> timeSlots
-        let currentEvent = relevantEvents |> List.tryFind (fun e -> timeRangeIntersects e.range slots.[0])
+        let currentEvent = relevantEvents |> List.tryFind (fun e -> timeRangeIntersects e.timeRange slots.[0])
 
         slots |> List.map (fun slotRange ->
-                    if currentEvent.IsSome && timeRangeIntersects currentEvent.Value.range slotRange then
+                    if currentEvent.IsSome && timeRangeIntersects currentEvent.Value.timeRange slotRange then
                         CurrentMeeting,slotRange
-                    else if (relevantEvents |> List.exists (fun e -> timeRangeIntersects slotRange e.range)) then
+                    else if (relevantEvents |> List.exists (fun e -> timeRangeIntersects slotRange e.timeRange)) then
                         Busy,slotRange
                     else Available,slotRange )
 

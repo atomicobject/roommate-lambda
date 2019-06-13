@@ -17,7 +17,9 @@ This is for when a device specifically asks for an update. We look up which cale
 
 This runs when a device requests a new reservation (when you push the button on the device). We look up what calendar the board is assigned to, fetch events for it, see if the time requested is available, and conditionally create the event.
 
-There's currently nothing sent to the board afterward, but we'll generally get a Google push notification soon after creating the event. To improve reliability and/or latency we might want to change this, sending a message from here and not relying on the push notification. We'd probably need to poll until we see that the event has been created successfully (and that the conference room has accepted the reservation).
+We could stop here and count on the push notification from Google to drive an update to the board. This is how it formerly worked, but we found the delay to be long and variable. Now we poll until we see that the event is created and the attendee has accepted the room, and send an update to the board from here.
+
+(It's probably followed, a few seconds later, by a duplicate update from the push notification handler)
 
 ### OnDeviceConnect
 
