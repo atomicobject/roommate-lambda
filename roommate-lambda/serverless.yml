@@ -9,22 +9,20 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - lambda.amazonaws.com
-          Action:
-          - sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
       Policies:
-        -
-          PolicyName: "roommate-iot"
+        - PolicyName: "roommate-iot"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
-              -
-                Effect: "Allow"
+              - Effect: "Allow"
                 Action:
                   - "iot:Connect"
                   - "iot:Publish"
@@ -36,7 +34,7 @@ Resources:
     Type: "AWS::Serverless::Function"
     Properties:
       Handler: "roommate-lambda::RoommateLambda.Functions::Get"
-      Runtime: "dotnetcore2.1"
+      Runtime: "dotnetcore3.1"
       CodeUri: ""
       MemorySize: 256
       Timeout: 30
@@ -52,7 +50,7 @@ Resources:
     Type: "AWS::Serverless::Function"
     Properties:
       Handler: "roommate-lambda::RoommateLambda.Functions::CalendarUpdate"
-      Runtime: "dotnetcore2.1"
+      Runtime: "dotnetcore3.1"
       CodeUri: ""
       MemorySize: 256
       Timeout: 30
@@ -68,7 +66,7 @@ Resources:
     Type: "AWS::Serverless::Function"
     Properties:
       Handler: "roommate-lambda::RoommateLambda.Functions::UpdateRequest"
-      Runtime: "dotnetcore2.1"
+      Runtime: "dotnetcore3.1"
       CodeUri: ""
       MemorySize: 256
       Timeout: 30
@@ -83,7 +81,7 @@ Resources:
     Type: "AWS::Serverless::Function"
     Properties:
       Handler: "roommate-lambda::RoommateLambda.Functions::ReservationRequest"
-      Runtime: "dotnetcore2.1"
+      Runtime: "dotnetcore3.1"
       CodeUri: ""
       MemorySize: 256
       Timeout: 30
@@ -98,7 +96,7 @@ Resources:
     Type: "AWS::Serverless::Function"
     Properties:
       Handler: "roommate-lambda::RoommateLambda.Functions::OnDeviceConnect"
-      Runtime: "dotnetcore2.1"
+      Runtime: "dotnetcore3.1"
       CodeUri: ""
       MemorySize: 256
       Timeout: 30
@@ -113,7 +111,7 @@ Resources:
     Type: "AWS::Serverless::Function"
     Properties:
       Handler: "roommate-lambda::RoommateLambda.Functions::RenewWebhooks"
-      Runtime: "dotnetcore2.1"
+      Runtime: "dotnetcore3.1"
       CodeUri: ""
       MemorySize: 256
       Timeout: 30
