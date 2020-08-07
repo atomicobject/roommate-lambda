@@ -64,6 +64,7 @@ module RoommateLogic =
         let json = (message |> Newtonsoft.Json.JsonConvert.SerializeObject)
         logFn "calendarUpdate message:"
         logFn json
+        logFn (sprintf "iot endpoint '%s'" endpoint)
         logFn "publishing to topics.."
         topics |> List.iter (fun topic ->
             let result = AwsIotClient.publish endpoint topic json
