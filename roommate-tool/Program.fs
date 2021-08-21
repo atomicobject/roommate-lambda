@@ -243,20 +243,25 @@ let main argv =
             let lights = lightsForRoom room
 
             printLights lights
+            printfn ""
 
             let desiredMeetingTime = chooseNextTime lights
-            let boardId = RoommateConfig.boardsForCalendar config room.calendarId |> List.head
-            desiredMeetingTime
-                |> logDesiredMeetingTime
-                |> Option.iter (fun (range,_) ->
-                    let startTime = TimeUtil.unixTimeFromDate range.start
-                    let finishTime = TimeUtil.unixTimeFromDate range.finish
-                    let message = sprintf "{\"boardId\":\"%s\",\"start\":%d,\"finish\":%d}" boardId startTime finishTime
+            let maybeBoardId = RoommateConfig.boardsForCalendar config room.calendarId |> List.tryHead
+            match maybeBoardId with
+            | None ->
+                printfn $"Error: cannot send button event - no board currently assigned to room '{room.name}'. (see roommate.json)"
+            | Some boardId ->
+                desiredMeetingTime
+                    |> logDesiredMeetingTime
+                    |> Option.iter (fun (range,_) ->
+                        let startTime = TimeUtil.unixTimeFromDate range.start
+                        let finishTime = TimeUtil.unixTimeFromDate range.finish
+                        let message = sprintf "{\"boardId\":\"%s\",\"start\":%d,\"finish\":%d}" boardId startTime finishTime
 
-                    let mqttEndpoint = readSecretFromEnv "mqttEndpoint"
-                    let result = AwsIotClient.publish mqttEndpoint "reservation-request" message
-                    printfn "result %s" (result.HttpStatusCode.ToString())
-                   )
+                        let mqttEndpoint = readSecretFromEnv "mqttEndpoint"
+                        let result = AwsIotClient.publish mqttEndpoint "reservation-request" message
+                        printfn "result %s" (result.HttpStatusCode.ToString())
+                       )
 
 
             ()
