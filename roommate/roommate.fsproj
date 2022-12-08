@@ -11,7 +11,7 @@
   <ItemGroup>
     <PackageReference Include="AWSSDK.IotData" Version="3.7.0.53" />
 <!--    <PackageReference Include="Google.Apis.Calendar.v3" Version="1.38.0.1529" />-->
-    <PackageReference Include="newtonsoft.json" Version="13.0.1" />
+    <PackageReference Include="newtonsoft.json" Version="13.0.2" />
     <PackageReference Update="FSharp.Core" Version="5.0.2" />
   </ItemGroup>
   <ItemGroup>
